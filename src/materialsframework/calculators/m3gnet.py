@@ -67,19 +67,8 @@ class M3GNetCalculator(BaseCalculator, BaseMDCalculator):
         Note:
             The remaining parameters for the M3GNet potential are set to their default values.
         """
-        import dgl
-        import torch
-
-        basecalculator_kwargs = {
-            key: kwargs.pop(key)
-            for key in BaseCalculator.__init__.__annotations__
-            if key in kwargs
-        }
-        basemd_kwargs = {
-            key: kwargs.pop(key)
-            for key in BaseMDCalculator.__init__.__annotations__
-            if key in kwargs
-        }
+        basecalculator_kwargs = {key: kwargs.pop(key) for key in BaseCalculator.__init__.__annotations__ if key in kwargs}
+        basemd_kwargs = {key: kwargs.pop(key) for key in BaseMDCalculator.__init__.__annotations__ if key in kwargs}
 
         # BaseCalculator and BaseMDCalculator specific attributes
         BaseCalculator.__init__(self, **basecalculator_kwargs)
@@ -91,12 +80,6 @@ class M3GNetCalculator(BaseCalculator, BaseMDCalculator):
         self.stress_weight = stress_weight
         self.device = device
         self.n_cores = n_cores
-
-        if self.n_cores is not None:
-            dgl.utils.set_num_threads(self.n_cores)
-
-        torch.set_default_device(torch.device(self.device))
-
         self._calculator = None
 
     @property
@@ -111,8 +94,14 @@ class M3GNetCalculator(BaseCalculator, BaseMDCalculator):
             Calculator: The ASE Calculator object configured with the M3GNet potential.
         """
         if self._calculator is None:
+            import dgl
+            import torch
             from matgl import load_model
             from matgl.ext.ase import PESCalculator
+
+            if self.n_cores is not None:
+                dgl.utils.set_num_threads(self.n_cores)
+            torch.set_default_device(torch.device(self.device))
 
             self._calculator = PESCalculator(
                 potential=load_model(self.model),
