@@ -92,7 +92,6 @@ db.sqlite3-journal
 instance/
 .webassets-cache
 .scrapy
-docs/api/*
 docs/_rst/*
 docs/_build/
 .pybuilder/
@@ -107,7 +106,6 @@ celerybeat.pid
 MANIFEST
 .venv*/
 .conda*/
-.python-version
 .env
 env/
 venv/
