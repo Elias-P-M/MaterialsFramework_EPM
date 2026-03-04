@@ -1,10 +1,9 @@
-"""
-This module provides classes and utilities for relaxing and calculating atomic structures
-using the Atomic Simulation Environment (ASE).
+"""This module provides classes and utilities for relaxing and calculating atomic structures.
 
 The `BaseCalculator` class serves as an abstract base class that defines a common
 interface for structure relaxation and calculation using various optimization algorithms.
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -14,10 +13,9 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from ase.calculators.calculator import Calculator
 from ase.constraints import FixAtoms, FixSymmetry
 from ase.filters import FrechetCellFilter
-from ase.optimize import BFGS, BFGSLineSearch, FIRE, LBFGS, LBFGSLineSearch, MDMin
+from ase.optimize import BFGS, FIRE, LBFGS, BFGSLineSearch, LBFGSLineSearch, MDMin
 from ase.optimize.sciopt import SciPyFminBFGS, SciPyFminCG
 from pymatgen.core import Molecule, Structure
 from pymatgen.io.ase import AseAtomsAdaptor
@@ -25,8 +23,10 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from materialsframework.tools.trajectory import TrajectoryObserver
 
 if TYPE_CHECKING:
-    from ase import Atoms
     from typing import Any
+
+    from ase import Atoms
+    from ase.calculators.calculator import Calculator
     from ase.optimize.optimize import Optimizer
 
 __author__ = "Doguhan Sariturk"
@@ -34,8 +34,7 @@ __email__ = "dogu.sariturk@gmail.com"
 
 
 class OPTIMIZERS(Enum):
-    """
-    Enumeration of available optimizers for structure relaxation.
+    """Enumeration of available optimizers for structure relaxation.
 
     Each member of this enum represents a specific optimization algorithm
     from the Atomic Simulation Environment (ASE) that can be used to relax
@@ -51,6 +50,7 @@ class OPTIMIZERS(Enum):
         scipyfminbfgs (SciPyFminBFGS): BFGS optimization using SciPy.
         scipyfmincg (SciPyFminCG): Conjugate gradient optimization using SciPy.
     """
+
     bfgs = BFGS
     bfgslinesearch = BFGSLineSearch
     fire = FIRE
@@ -62,8 +62,7 @@ class OPTIMIZERS(Enum):
 
 
 class BaseCalculator(ABC):
-    """
-    Abstract base class for implementing structure relaxers and calculators using the Atomic Simulation Environment (ASE).
+    """Abstract base class for implementing structure relaxers and calculators using the Atomic Simulation Environment (ASE).
 
     This class defines the common interface and basic functionality for performing
     structure relaxation and calculations using different optimization algorithms and potentials.
@@ -92,8 +91,7 @@ class BaseCalculator(ABC):
     @classmethod
     @abstractmethod
     def AVAILABLE_PROPERTIES(cls) -> list[str]:
-        """
-        Abstract class-level property that must be defined in all subclasses.
+        """Abstract class-level property that must be defined in all subclasses.
 
         This property should return a list of strings representing the
         available properties that the calculator can compute, such as
@@ -104,24 +102,23 @@ class BaseCalculator(ABC):
         """
 
     def __init__(
-            self,
-            fmax: float = 0.1,
-            steps: int = 1000,
-            optimizer: Optimizer | str = "FIRE",
-            relax_cell: bool = True,
-            fix_symmetry: bool = False,
-            fix_atoms: bool = False,
-            hydrostatic_strain: bool = False,
-            symprec: float = 1e-2,
-            traj_file: str | None = None,
-            interval: int = 1,
-            verbose: bool = False,
-            params_asecellfilter: dict | None = None,
-            include_magmoms: bool = False,
-            include_dipoles: bool = False,
+        self,
+        fmax: float = 0.1,
+        steps: int = 1000,
+        optimizer: Optimizer | str = "FIRE",
+        relax_cell: bool = True,
+        fix_symmetry: bool = False,
+        fix_atoms: bool = False,
+        hydrostatic_strain: bool = False,
+        symprec: float = 1e-2,
+        traj_file: str | None = None,
+        interval: int = 1,
+        verbose: bool = False,
+        params_asecellfilter: dict | None = None,
+        include_magmoms: bool = False,
+        include_dipoles: bool = False,
     ):
-        """
-        Initializes the BaseCalculator with parameters for structure relaxation.
+        """Initializes the BaseCalculator with parameters for structure relaxation.
 
         Args:
             fmax (float, optional): Maximum force convergence criterion. Defaults to 0.1.
@@ -141,13 +138,18 @@ class BaseCalculator(ABC):
             include_magmoms (bool, optional): If True, includes magnetic moments in the trajectory. Defaults to False.
             include_dipoles (bool, optional): If True, includes dipoles in the trajectory. Defaults to False.
         """
-
         if not hasattr(self.__class__, "AVAILABLE_PROPERTIES"):
-            raise TypeError(f"Class {self.__class__.__name__} must define AVAILABLE_PROPERTIES")
+            raise TypeError(
+                f"Class {self.__class__.__name__} must define AVAILABLE_PROPERTIES"
+            )
 
         self.fmax = fmax
         self.steps = steps
-        self.optimizer: Optimizer = OPTIMIZERS[optimizer.lower()].value if isinstance(optimizer, str) else optimizer
+        self.optimizer: Optimizer = (
+            OPTIMIZERS[optimizer.lower()].value
+            if isinstance(optimizer, str)
+            else optimizer
+        )
         self.relax_cell = relax_cell
         self.fix_symmetry = fix_symmetry
         self.fix_atoms = fix_atoms
@@ -166,8 +168,7 @@ class BaseCalculator(ABC):
 
     @property
     def calculator(self) -> Calculator:
-        """
-        Returns the ASE Calculator object associated with this relaxer.
+        """Returns the ASE Calculator object associated with this relaxer.
 
         This property must be implemented in subclasses of BaseCalculator.
         The returned Calculator object is used to perform the relaxation
@@ -180,15 +181,16 @@ class BaseCalculator(ABC):
             Calculator: An ASE Calculator instance configured for the specific
             relaxation and calculation task.
         """
-        raise NotImplementedError("Subclasses must implement the 'calculator' property to return a valid ASE Calculator instance.")
+        raise NotImplementedError(
+            "Subclasses must implement the 'calculator' property to return a valid ASE Calculator instance."
+        )
 
     def relax(
-            self,
-            structure: Atoms | Structure | Molecule,
-            **kwargs,
+        self,
+        structure: Atoms | Structure | Molecule,
+        **kwargs,
     ) -> dict[str, Any]:
-        """
-        Performs the relaxation of a given atomic structure using the specified optimizer and calculator.
+        """Performs the relaxation of a given atomic structure using the specified optimizer and calculator.
 
         This method relaxes the input structure (which can be an `Atoms`, `Structure`, or `Molecule` object)
         according to the settings defined in the class.
@@ -211,7 +213,6 @@ class BaseCalculator(ABC):
         Raises:
             ValueError: If the structure cannot be relaxed.
         """
-
         stream = sys.stdout if self.verbose else io.StringIO()
         params_asecellfilter = self.params_asecellfilter or {}
 
@@ -229,15 +230,15 @@ class BaseCalculator(ABC):
 
         with contextlib.redirect_stdout(stream):
             obs = TrajectoryObserver(
-                    atoms,
-                    include_magmoms=self.include_magmoms,
-                    include_dipoles=self.include_dipoles
+                atoms,
+                include_magmoms=self.include_magmoms,
+                include_dipoles=self.include_dipoles,
             )
             if self.relax_cell:
                 atoms = FrechetCellFilter(
-                        atoms=atoms,
-                        hydrostatic_strain=self.hydrostatic_strain,
-                        **params_asecellfilter
+                    atoms=atoms,
+                    hydrostatic_strain=self.hydrostatic_strain,
+                    **params_asecellfilter,
                 )
             optimizer = self.optimizer(atoms, **kwargs)
             optimizer.attach(obs, interval=self.interval)
@@ -253,23 +254,24 @@ class BaseCalculator(ABC):
             atoms = atoms.atoms
 
         out_dict = {
-                "final_structure": self.ase_adaptor.get_structure(atoms),
-                "trajectory": obs,
+            "final_structure": self.ase_adaptor.get_structure(atoms),
+            "trajectory": obs,
         }
 
-        out_dict.update({
+        out_dict.update(
+            {
                 prop: self.calculator.results.get(prop, None)
                 for prop in self.__class__.AVAILABLE_PROPERTIES
-        })
+            }
+        )
 
         return out_dict
 
     def calculate(
-            self,
-            structure: Atoms | Structure | Molecule,
+        self,
+        structure: Atoms | Structure | Molecule,
     ) -> dict[str, Any]:
-        """
-        Performs a single-point calculation on the given atomic structure using the specified calculator.
+        """Performs a single-point calculation on the given atomic structure using the specified calculator.
 
         This method calculates the properties of the input structure (which can be an `Atoms`, `Structure`, or `Molecule` object)
         without performing any relaxation. The properties to be calculated are defined in the `AVAILABLE_PROPERTIES` class attribute.
@@ -293,18 +295,27 @@ class BaseCalculator(ABC):
 
         atoms.calc = self.calculator
         self.calculator.calculate(
-                atoms=atoms,
-                properties=self.AVAILABLE_PROPERTIES,
-                system_changes=['positions', 'numbers', 'cell', 'pbc', 'initial_charges', 'initial_magmoms']
+            atoms=atoms,
+            properties=self.AVAILABLE_PROPERTIES,
+            system_changes=[
+                "positions",
+                "numbers",
+                "cell",
+                "pbc",
+                "initial_charges",
+                "initial_magmoms",
+            ],
         )
 
         out_dict = {
-                "final_structure": self.ase_adaptor.get_structure(atoms),
+            "final_structure": self.ase_adaptor.get_structure(atoms),
         }
 
-        out_dict.update({
+        out_dict.update(
+            {
                 prop: self.calculator.results[prop]
                 for prop in self.__class__.AVAILABLE_PROPERTIES
-        })
+            }
+        )
 
         return out_dict
