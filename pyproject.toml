@@ -118,6 +118,9 @@ conflicts = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/materialsframework"]
 
@@ -176,7 +179,7 @@ chgnet      = "materialsframework.calculators.chgnet:CHGNetCalculator"
 deepmd      = "materialsframework.calculators.deepmd:DeePMDCalculator"
 eqnorm      = "materialsframework.calculators.eqnorm:EqnormCalculator"
 eqv2        = "materialsframework.calculators.eqv2:EqV2Calculator"
-esen        = "materialsframework.calculators.esen:ESENCalculator"
+esen        = "materialsframework.calculators.esen:eSENCalculator"
 gptff       = "materialsframework.calculators.gptff:GPTFFCalculator"
 grace       = "materialsframework.calculators.grace:GraceCalculator"
 hienet      = "materialsframework.calculators.hienet:HIENetCalculator"
