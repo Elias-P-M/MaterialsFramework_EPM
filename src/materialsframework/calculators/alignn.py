@@ -1,12 +1,12 @@
-"""
-This module provides a class for performing calculations and structure relaxation using the ALIGNN-FF potential.
+"""This module provides a class for performing calculations and structure relaxation using the ALIGNN-FF potential.
 
 The `AlignnCalculator` class is designed to calculate properties such as potential energy, forces,
 stresses, and to perform structure relaxation using a specified ALIGNN-FF model.
 """
+
 from __future__ import annotations
 
-from typing import Literal, TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from materialsframework.tools.calculator import BaseCalculator
 from materialsframework.tools.md import BaseMDCalculator
@@ -19,8 +19,7 @@ __email__ = "dogu.sariturk@gmail.com"
 
 
 class AlignnCalculator(BaseCalculator, BaseMDCalculator):
-    """
-    A calculator class for performing material property calculations and structure relaxation using the ALIGNN-FF potential.
+    """A calculator class for performing material property calculations and structure relaxation using the ALIGNN-FF potential.
 
     The `AlignnCalculator` class supports the calculation of properties such as potential energy,
     forces, and stresses. It also allows for the relaxation of structures using a specified ALIGNN-FF model.
@@ -37,15 +36,14 @@ class AlignnCalculator(BaseCalculator, BaseMDCalculator):
     AVAILABLE_PROPERTIES = ["energy", "forces", "stress"]
 
     def __init__(
-            self,
-            model: str | None = None,
-            model_filename="best_model.pt",
-            config_filename="config.json",
-            device: Literal["cuda", "cpu", "mps"] = "cpu",
-            **kwargs
+        self,
+        model: str | None = None,
+        model_filename="best_model.pt",
+        config_filename="config.json",
+        device: Literal["cuda", "cpu", "mps"] = "cpu",
+        **kwargs,
     ) -> None:
-        """
-        Initializes the AlignnCalculator with the specified model and calculation settings.
+        """Initializes the AlignnCalculator with the specified model and calculation settings.
 
         This method sets up the calculator with a predefined ALIGNN-FF model, which will be used
         to calculate properties and perform structure relaxation. Additional parameters
@@ -59,8 +57,16 @@ class AlignnCalculator(BaseCalculator, BaseMDCalculator):
             device (Literal["cuda", "cpu", "mps"], optional): The device to use for calculations. Defaults to "cpu".
             **kwargs: Additional keyword arguments passed to the `BaseCalculator` and `BaseMDCalculator` constructors.
         """
-        basecalculator_kwargs = {key: kwargs.pop(key) for key in BaseCalculator.__init__.__annotations__ if key in kwargs}
-        basemd_kwargs = {key: kwargs.pop(key) for key in BaseMDCalculator.__init__.__annotations__ if key in kwargs}
+        basecalculator_kwargs = {
+            key: kwargs.pop(key)
+            for key in BaseCalculator.__init__.__annotations__
+            if key in kwargs
+        }
+        basemd_kwargs = {
+            key: kwargs.pop(key)
+            for key in BaseMDCalculator.__init__.__annotations__
+            if key in kwargs
+        }
 
         # BaseCalculator and BaseMDCalculator specific attributes
         BaseCalculator.__init__(self, **basecalculator_kwargs)
@@ -76,8 +82,7 @@ class AlignnCalculator(BaseCalculator, BaseMDCalculator):
 
     @property
     def calculator(self) -> Calculator:
-        """
-        Creates and returns the ASE Calculator object associated with this calculator instance.
+        """Creates and returns the ASE Calculator object associated with this calculator instance.
 
         This property initializes the Calculator object using the ALIGNN-FF potential and other settings
         specified during the initialization of this calculator. The Calculator object is then returned
@@ -88,6 +93,7 @@ class AlignnCalculator(BaseCalculator, BaseMDCalculator):
         """
         if self._calculator is None:
             from alignn.ff.calculators import AlignnAtomwiseCalculator
+
             self._calculator = AlignnAtomwiseCalculator(
                 path=self.model,
                 model_filename=self.model_filename,

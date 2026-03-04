@@ -1,9 +1,9 @@
-"""
-This module provides a class for performing calculations using the MEGNet potential.
+"""This module provides a class for performing calculations using the MEGNet potential.
 
 The `MEGNetCalculator` class is designed to calculate properties such as the formation energy
 of materials using a specified MEGNet model.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -16,8 +16,7 @@ __email__ = "dogu.sariturk@gmail.com"
 
 
 class MEGNetCalculator:
-    """
-    A calculator class for performing material property calculations using the MEGNet potential.
+    """A calculator class for performing material property calculations using the MEGNet potential.
 
     The `MEGNetCalculator` class is capable of calculating the formation energy of a given structure
     using a specified MEGNet model. The class is designed to interface with the `matgl` package,
@@ -34,11 +33,10 @@ class MEGNetCalculator:
     AVAILABLE_PROPERTIES: list[str] = ["formation_energy"]
 
     def __init__(
-            self,
-            model: str = "MEGNet-MP-2018.6.1-Eform",
+        self,
+        model: str = "MEGNet-MP-2018.6.1-Eform",
     ) -> None:
-        """
-        Initializes a MEGNetCalculator instance with the specified MEGNet model.
+        """Initializes a MEGNetCalculator instance with the specified MEGNet model.
 
         This method sets up the calculator with a predefined MEGNet model, which will be used
         for predicting material properties such as formation energy.
@@ -56,12 +54,8 @@ class MEGNetCalculator:
         # MEGNet specific attributes
         self.model = model
 
-    def calculate(
-            self,
-            structure: Structure
-    ) -> dict[str, float]:
-        """
-        Calculates the formation energy of the provided structure using the MEGNet model.
+    def calculate(self, structure: Structure) -> dict[str, float]:
+        """Calculates the formation energy of the provided structure using the MEGNet model.
 
         This method predicts the formation energy for a given structure using the preloaded
         MEGNet model.
@@ -80,7 +74,6 @@ class MEGNetCalculator:
             >>> result = megnet_calculator.calculate(structure=struct)
         """
         import matgl
+
         potential = matgl.load_model(self.model)
-        return {
-                "formation_energy": potential.predict_structure(structure)
-        }
+        return {"formation_energy": potential.predict_structure(structure)}

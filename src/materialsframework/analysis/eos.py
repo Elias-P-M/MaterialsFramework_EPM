@@ -5,6 +5,7 @@ to a structure and calculating the corresponding energies. The resulting data is
 equation of state (EOS), providing insights into the mechanical properties of the material, such as the
 bulk modulus.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -17,6 +18,7 @@ from materialsframework.transformations.eos import EOSTransformation
 
 if TYPE_CHECKING:
     from pymatgen.core import Structure
+
     from materialsframework.tools.calculator import BaseCalculator
 
 __author__ = "Doguhan Sariturk"
@@ -32,13 +34,13 @@ class EOSAnalyzer:
     """
 
     def __init__(
-            self,
-            start: float = -0.1,
-            stop: float = 0.1,
-            num: int = 11,
-            eos_name: str = "birch_murnaghan",
-            calculator: BaseCalculator | None = None,
-            eos_transformation: EOSTransformation | None = None
+        self,
+        start: float = -0.1,
+        stop: float = 0.1,
+        num: int = 11,
+        eos_name: str = "birch_murnaghan",
+        calculator: BaseCalculator | None = None,
+        eos_transformation: EOSTransformation | None = None,
     ) -> None:
         """Initializes the `EOSAnalyzer` object.
 
@@ -61,9 +63,7 @@ class EOSAnalyzer:
         self._eos_transformation = eos_transformation
 
     def calculate(
-            self,
-            structure: Structure | Atoms,
-            is_relaxed: bool = False
+        self, structure: Structure | Atoms, is_relaxed: bool = False
     ) -> dict[str, list | float]:
         """Calculates the potential energies and volumes to construct the EOS for the given undeformed structure.
 
@@ -90,7 +90,9 @@ class EOSAnalyzer:
             ValueError: If the calculator object does not have the 'energy' property implemented.
         """
         if "energy" not in self.calculator.AVAILABLE_PROPERTIES:
-            raise ValueError("The calculator object must have the 'energy' property implemented.")
+            raise ValueError(
+                "The calculator object must have the 'energy' property implemented."
+            )
 
         if isinstance(structure, Atoms):
             structure = self.ase_adaptor.get_structure(structure)
@@ -102,20 +104,29 @@ class EOSAnalyzer:
 
         volume_list, energy_list = map(
             list,
-            zip(*[(deformed_structure.volume, self.calculator.relax(structure=deformed_structure)["energy"]) for deformed_structure in self.eos_transformation.structures]),
+            zip(
+                *[
+                    (
+                        deformed_structure.volume,
+                        self.calculator.relax(structure=deformed_structure)["energy"],
+                    )
+                    for deformed_structure in self.eos_transformation.structures
+                ],
+                strict=False,
+            ),
         )
 
         eos = EOS(eos_name=self.eos_name)
         eos_fit = eos.fit(volumes=volume_list, energies=energy_list)
 
         return {
-                "volumes": volume_list,
-                "energies": energy_list,
-                "e0": eos_fit.e0,
-                "b0": eos_fit.b0,
-                "b0_GPa": eos_fit.b0_GPa,
-                "b1": eos_fit.b1,
-                "v0": eos_fit.v0,
+            "volumes": volume_list,
+            "energies": energy_list,
+            "e0": eos_fit.e0,
+            "b0": eos_fit.b0,
+            "b0_GPa": eos_fit.b0_GPa,
+            "b1": eos_fit.b1,
+            "v0": eos_fit.v0,
         }
 
     @property
@@ -129,6 +140,7 @@ class EOSAnalyzer:
         """
         if self._calculator is None:
             from materialsframework.calculators.m3gnet import M3GNetCalculator
+
             self._calculator = M3GNetCalculator()
         return self._calculator
 
@@ -143,8 +155,6 @@ class EOSAnalyzer:
         """
         if self._eos_transformation is None:
             self._eos_transformation = EOSTransformation(
-                    start=self.start,
-                    stop=self.stop,
-                    num=self.num
+                start=self.start, stop=self.stop, num=self.num
             )
         return self._eos_transformation

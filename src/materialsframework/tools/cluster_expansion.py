@@ -1,21 +1,23 @@
+"""Cluster expansion module for fitting and predicting material properties."""
+
 from __future__ import annotations
 
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
-from ase import Atoms
 from ase.db.sqlite import SQLite3Database
 
-from materialsframework.tools.calculator import BaseCalculator
-from materialsframework.tools.md import BaseMDCalculator
+if TYPE_CHECKING:
+    from ase import Atoms
+
+    from materialsframework.tools.calculator import BaseCalculator
+    from materialsframework.tools.md import BaseMDCalculator
 
 __author__ = "Doguhan Sariturk"
 __email__ = "dogu.sariturk@gmail.com"
 
 
 class ClusterExpansion:
-    """
-    A class to handle cluster expansion calculations.
-    """
+    """A class to handle cluster expansion calculations."""
 
     def __init__(
         self,
@@ -41,8 +43,7 @@ class ClusterExpansion:
         verbose: bool = False,
         calculator: BaseCalculator | BaseMDCalculator | None = None,
     ) -> None:
-        """
-        Initialize the ClusterExpansion instance.
+        """Initialize the ClusterExpansion instance.
 
         Parameters:
             symprec (float): Symmetry precision for structure analysis.
@@ -84,8 +85,7 @@ class ClusterExpansion:
         properties: list[str] | None = None,
         fit_property: str = "mixing_energy",
     ):
-        """
-        Fit the cluster expansion model using the provided structures and calculator.
+        """Fit the cluster expansion model using the provided structures and calculator.
 
         Parameters:
             structures (list[Atoms] | SQLite3Database): List of structures or an ASE database containing structures.
@@ -126,7 +126,9 @@ class ClusterExpansion:
         else:
             for structure in self.structures:
                 if not self.is_relaxed:
-                    structure = self.calculator.relax(structure, verbose=self.verbose)["final_structure"]
+                    structure = self.calculator.relax(structure, verbose=self.verbose)[
+                        "final_structure"
+                    ]
 
                 self.structure_container.add_structure(
                     structure=structure.to_ase_atoms(msonable=False),
@@ -155,9 +157,9 @@ class ClusterExpansion:
             print(opt)
 
         self.cluster_expansion = IcetClusterExpansion(
-                cluster_space=self.cluster_space,
-                parameters=opt.parameters,
-                metadata=opt.summary,
+            cluster_space=self.cluster_space,
+            parameters=opt.parameters,
+            metadata=opt.summary,
         )
 
         if self.verbose:
@@ -165,8 +167,7 @@ class ClusterExpansion:
 
     @property
     def calculator(self) -> BaseCalculator:
-        """
-        Returns the calculator used for energy and force calculations.
+        """Returns the calculator used for energy and force calculations.
 
         If the calculator instance is not already initialized, this method creates a new `M3GNetCalculator` instance.
 

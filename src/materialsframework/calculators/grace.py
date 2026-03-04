@@ -1,9 +1,9 @@
-"""
-This module provides a class for performing calculations using the Grace potential.
+"""This module provides a class for performing calculations using the Grace potential.
 
 The `GraceCalculator` class is designed to calculate properties such as potential energy, forces,
 stresses, and magnetic moments, and to perform structure relaxation using a specified Grace model.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -19,8 +19,7 @@ __email__ = "dogu.sariturk@gmail.com"
 
 
 class GraceCalculator(BaseCalculator, BaseMDCalculator):
-    """
-    A calculator class for performing material property calculations and structure relaxation using the Grace potential.
+    """A calculator class for performing material property calculations and structure relaxation using the Grace potential.
 
     The `GraceCalculator` class supports the calculation of properties such as potential energy,
     forces, and stresses. It also allows for the relaxation of structures using a specified Grace model.
@@ -36,15 +35,14 @@ class GraceCalculator(BaseCalculator, BaseMDCalculator):
     AVAILABLE_PROPERTIES = ["energy", "forces", "free_energy", "stress"]
 
     def __init__(
-            self,
-            model: str = "GRACE-2L-OMAT",
-            pad_neighbors_fraction: float = 0.05,
-            pad_atoms_number: int = 1,
-            min_dist: float | None = None,
-            **kwargs
+        self,
+        model: str = "GRACE-2L-OMAT",
+        pad_neighbors_fraction: float = 0.05,
+        pad_atoms_number: int = 1,
+        min_dist: float | None = None,
+        **kwargs,
     ) -> None:
-        """
-        Initializes the GraceCalculator with the specified model and calculation settings.
+        """Initializes the GraceCalculator with the specified model and calculation settings.
 
         This method sets up the calculator with a predefined Grace model, which will be used
         to calculate properties and perform structure relaxation. Additional parameters
@@ -58,8 +56,16 @@ class GraceCalculator(BaseCalculator, BaseMDCalculator):
             min_dist (float | None, optional): The minimum distance between atoms. Defaults to None.
             **kwargs: Additional keyword arguments passed to the `BaseCalculator` and `BaseMDCalculator` constructors.
         """
-        basecalculator_kwargs = {key: kwargs.pop(key) for key in BaseCalculator.__init__.__annotations__ if key in kwargs}
-        basemd_kwargs = {key: kwargs.pop(key) for key in BaseMDCalculator.__init__.__annotations__ if key in kwargs}
+        basecalculator_kwargs = {
+            key: kwargs.pop(key)
+            for key in BaseCalculator.__init__.__annotations__
+            if key in kwargs
+        }
+        basemd_kwargs = {
+            key: kwargs.pop(key)
+            for key in BaseMDCalculator.__init__.__annotations__
+            if key in kwargs
+        }
 
         # BaseCalculator and BaseMDCalculator specific attributes
         BaseCalculator.__init__(self, **basecalculator_kwargs)
@@ -75,8 +81,7 @@ class GraceCalculator(BaseCalculator, BaseMDCalculator):
 
     @property
     def calculator(self) -> Calculator:
-        """
-        Creates and returns the ASE Calculator object associated with this calculator instance.
+        """Creates and returns the ASE Calculator object associated with this calculator instance.
 
         This property initializes the Calculator object using the Grace potential and other settings
         specified during the initialization of this calculator. The Calculator object is then returned
@@ -87,6 +92,7 @@ class GraceCalculator(BaseCalculator, BaseMDCalculator):
         """
         if self._calculator is None:
             from tensorpotential.calculator.foundation_models import grace_fm
+
             self._calculator = grace_fm(
                 model=self.model,
                 pad_neighbors_fraction=self.pad_neighbors_fraction,

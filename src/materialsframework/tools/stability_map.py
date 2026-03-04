@@ -8,6 +8,7 @@ The stability map is a useful tool for visualizing the stability of different ph
 and compositions in a multi-component system.
 It can help identify regions of stability and phase separation in the system.
 """
+
 import itertools
 import warnings
 
@@ -15,7 +16,8 @@ import numpy as np
 import pandas as pd
 import psutil
 from pandarallel import pandarallel
-from pycalphad import Database, Workspace, variables as v
+from pycalphad import Database, Workspace
+from pycalphad import variables as v
 from pycalphad.property_framework import IsolatedPhase
 
 warnings.filterwarnings("ignore")
@@ -26,8 +28,7 @@ __email__ = "dogu.sariturk@gmail.com"
 
 
 class StabilityMap:
-    """
-    Class to generate a stability map for a given set of elements and phase.
+    """Class to generate a stability map for a given set of elements and phase.
 
     Attributes:
         dbf (Database): The thermodynamic database.
@@ -46,35 +47,102 @@ class StabilityMap:
         of the Gibbs energy with respect to the chemical potentials of the components.
     """
 
-    O = np.array([
-            [-1, -1 / np.sqrt(3), -1 / np.sqrt(6), -1 / np.sqrt(10), -1 / np.sqrt(15), -1 / np.sqrt(21), -1 / (2 * np.sqrt(7)), -1 / 6,
-             -1 / (3 * np.sqrt(5))],
-            [1, -1 / np.sqrt(3), -1 / np.sqrt(6), -1 / np.sqrt(10), -1 / np.sqrt(15), -1 / np.sqrt(21), -1 / (2 * np.sqrt(7)), -1 / 6,
-             -1 / (3 * np.sqrt(5))],
-            [0, 2 / np.sqrt(3), -1 / np.sqrt(6), -1 / np.sqrt(10), -1 / np.sqrt(15), -1 / np.sqrt(21), -1 / (2 * np.sqrt(7)), -1 / 6,
-             -1 / (3 * np.sqrt(5))],
-            [0, 0, np.sqrt(3) / np.sqrt(2), -1 / np.sqrt(10), -1 / np.sqrt(15), -1 / np.sqrt(21), -1 / (2 * np.sqrt(7)), -1 / 6,
-             -1 / (3 * np.sqrt(5))],
-            [0, 0, 0, 2 * np.sqrt(2) / np.sqrt(5), -1 / np.sqrt(15), -1 / np.sqrt(21), -1 / (2 * np.sqrt(7)), -1 / 6, -1 / (3 * np.sqrt(5))],
-            [0, 0, 0, 0, np.sqrt(5) / np.sqrt(3), -1 / np.sqrt(21), -1 / (2 * np.sqrt(7)), -1 / 6, -1 / (3 * np.sqrt(5))],
-            [0, 0, 0, 0, 0, 2 * np.sqrt(3) / np.sqrt(7), -1 / (2 * np.sqrt(7)), -1 / 6, -1 / (3 * np.sqrt(5))],
+    ORTHOGONALIZATION = np.array(
+        [
+            [
+                -1,
+                -1 / np.sqrt(3),
+                -1 / np.sqrt(6),
+                -1 / np.sqrt(10),
+                -1 / np.sqrt(15),
+                -1 / np.sqrt(21),
+                -1 / (2 * np.sqrt(7)),
+                -1 / 6,
+                -1 / (3 * np.sqrt(5)),
+            ],
+            [
+                1,
+                -1 / np.sqrt(3),
+                -1 / np.sqrt(6),
+                -1 / np.sqrt(10),
+                -1 / np.sqrt(15),
+                -1 / np.sqrt(21),
+                -1 / (2 * np.sqrt(7)),
+                -1 / 6,
+                -1 / (3 * np.sqrt(5)),
+            ],
+            [
+                0,
+                2 / np.sqrt(3),
+                -1 / np.sqrt(6),
+                -1 / np.sqrt(10),
+                -1 / np.sqrt(15),
+                -1 / np.sqrt(21),
+                -1 / (2 * np.sqrt(7)),
+                -1 / 6,
+                -1 / (3 * np.sqrt(5)),
+            ],
+            [
+                0,
+                0,
+                np.sqrt(3) / np.sqrt(2),
+                -1 / np.sqrt(10),
+                -1 / np.sqrt(15),
+                -1 / np.sqrt(21),
+                -1 / (2 * np.sqrt(7)),
+                -1 / 6,
+                -1 / (3 * np.sqrt(5)),
+            ],
+            [
+                0,
+                0,
+                0,
+                2 * np.sqrt(2) / np.sqrt(5),
+                -1 / np.sqrt(15),
+                -1 / np.sqrt(21),
+                -1 / (2 * np.sqrt(7)),
+                -1 / 6,
+                -1 / (3 * np.sqrt(5)),
+            ],
+            [
+                0,
+                0,
+                0,
+                0,
+                np.sqrt(5) / np.sqrt(3),
+                -1 / np.sqrt(21),
+                -1 / (2 * np.sqrt(7)),
+                -1 / 6,
+                -1 / (3 * np.sqrt(5)),
+            ],
+            [
+                0,
+                0,
+                0,
+                0,
+                0,
+                2 * np.sqrt(3) / np.sqrt(7),
+                -1 / (2 * np.sqrt(7)),
+                -1 / 6,
+                -1 / (3 * np.sqrt(5)),
+            ],
             [0, 0, 0, 0, 0, 0, np.sqrt(7) / 2, -1 / 6, -1 / (3 * np.sqrt(5))],
-            [0, 0, 0, 0, 0, 0, 0, 4 / 3, -1 / (3 * np.sqrt(5))]
-    ])
+            [0, 0, 0, 0, 0, 0, 0, 4 / 3, -1 / (3 * np.sqrt(5))],
+        ]
+    )
 
     def __init__(
-            self,
-            db: Database | str,
-            elements: list[str] | None = None,
-            phase: str | None = None,
-            step: float = 0.05,
-            temperature: int | float = 1500,
-            pressure: int | float = 101325,
-            nb_workers: int = None,
-            progress_bar: bool = False
+        self,
+        db: Database | str,
+        elements: list[str] | None = None,
+        phase: str | None = None,
+        step: float = 0.05,
+        temperature: int | float = 1500,
+        pressure: int | float = 101325,
+        nb_workers: int = None,
+        progress_bar: bool = False,
     ) -> None:
-        """
-        Initialize the StabilityMap class.
+        """Initialize the StabilityMap class.
 
         Args:
             db (str): Path to the thermodynamic database file.
@@ -89,36 +157,49 @@ class StabilityMap:
         Raises:
             ValueError: If multiple phases are found in the database and phase is not specified.
         """
-        pandarallel.initialize(nb_workers=nb_workers if nb_workers is not None else psutil.cpu_count(logical=False), progress_bar=progress_bar)
+        pandarallel.initialize(
+            nb_workers=nb_workers
+            if nb_workers is not None
+            else psutil.cpu_count(logical=False),
+            progress_bar=progress_bar,
+        )
         self.dbf = db if isinstance(db, Database) else Database(db)
 
         if phase is None and len(self.dbf.phases.keys()) > 1:
-            raise ValueError(f"Multiple phases found in the database. Please specify one of {list(self.dbf.phases.keys())}.")
+            raise ValueError(
+                f"Multiple phases found in the database. Please specify one of {list(self.dbf.phases.keys())}."
+            )
 
-        self.elements = sorted(list(self.dbf.elements)) if elements is None else elements
+        self.elements = sorted(self.dbf.elements) if elements is None else elements
         self.phase = list(db.phases.keys())[0] if phase is None else phase
         self.compositions = self._generate_compositions(self.elements, step=step)
         self.temperature = temperature
         self.pressure = pressure
 
     def fit(self):
-        """
-        Fit the stability map by calculating eigenvalues and determining sections.
+        """Fit the stability map by calculating eigenvalues and determining sections.
 
         This method processes each composition, calculates the eigenvalues of the Hessian matrix,
         and determines the stability section for each composition.
         """
-        eigenvalues = pd.DataFrame(self.compositions.parallel_apply(self._process_row, axis=1).tolist(), index=self.compositions.index)
-        eigenvalues.columns = [f"eigenvalue_{i + 1}" for i in range(eigenvalues.shape[1])]
+        eigenvalues = pd.DataFrame(
+            self.compositions.parallel_apply(self._process_row, axis=1).tolist(),
+            index=self.compositions.index,
+        )
+        eigenvalues.columns = [
+            f"eigenvalue_{i + 1}" for i in range(eigenvalues.shape[1])
+        ]
         self.compositions = pd.concat([self.compositions, eigenvalues], axis=1)
         self.compositions.dropna(inplace=True)
-        self.compositions["negative_eigenvalues"] = self.compositions.apply(self._determine_section, axis=1)
+        self.compositions["negative_eigenvalues"] = self.compositions.apply(
+            self._determine_section, axis=1
+        )
 
     @staticmethod
     def _generate_compositions(elements: list, step: float = 0.05):
-        """
-        Generate all possible compositions where the sum of elements equals 1,
-        with a given step size, excluding rows where any element is 1.
+        """Generate all possible compositions where the sum of elements equals 1.
+
+        Uses a given step size, excluding rows where any element is 1.
 
         Args:
             elements (list): List of element names.
@@ -130,16 +211,17 @@ class StabilityMap:
         possible_values = np.arange(0, 1.05, step)
 
         valid_compositions = [
-                composition for composition in itertools.product(possible_values, repeat=len(elements))
-                if np.isclose(sum(composition), 1.0) and not any(val == 1.0 for val in composition)
+            composition
+            for composition in itertools.product(possible_values, repeat=len(elements))
+            if np.isclose(sum(composition), 1.0)
+            and not any(val == 1.0 for val in composition)
         ]
 
         return pd.DataFrame(valid_compositions, columns=elements)
 
     @staticmethod
     def _determine_section(row: pd.Series) -> int:
-        """
-        Determine the number of negative eigenvalues.
+        """Determine the number of negative eigenvalues.
 
         Args:
             row (pd.Series): A row of eigenvalues.
@@ -147,12 +229,13 @@ class StabilityMap:
         Returns:
             int: Number of negative eigenvalues.
         """
-        negative_eigenvalues = sum(1 for col in row.index if col.startswith("eigenvalue") and row[col] < 0)
+        negative_eigenvalues = sum(
+            1 for col in row.index if col.startswith("eigenvalue") and row[col] < 0
+        )
         return negative_eigenvalues
 
     def _process_row(self, df_row: pd.Series) -> list:
-        """
-        Process a row of compositions and calculate eigenvalues.
+        """Process a row of compositions and calculate eigenvalues.
 
         Args:
             df_row (pd.Series): A row of compositions.
@@ -165,29 +248,47 @@ class StabilityMap:
         """
         try:
             wks = Workspace(
-                    database=self.dbf,
-                    components=self.elements,
-                    phases=self.phase,
-                    conditions={
-                            **{v.X(element): df_row[element] for element in self.elements[:-1]},
-                            v.T: self.temperature,
-                            v.P: self.pressure
-                    }
+                database=self.dbf,
+                components=self.elements,
+                phases=self.phase,
+                conditions={
+                    **{v.X(element): df_row[element] for element in self.elements[:-1]},
+                    v.T: self.temperature,
+                    v.P: self.pressure,
+                },
             )
 
             # Calculate first derivatives of chemical potentials
-            dmu_dx = {comp: [wks.get(IsolatedPhase(self.phase, wks=wks)(f"MU({comp}).X({indep})")) for indep in self.elements[:-1]]
-                      for comp in self.elements}
+            dmu_dx = {
+                comp: [
+                    wks.get(
+                        IsolatedPhase(self.phase, wks=wks)(f"MU({comp}).X({indep})")
+                    )
+                    for indep in self.elements[:-1]
+                ]
+                for comp in self.elements
+            }
 
             # Calculate second derivatives of Gibbs energy
-            Hessian = np.array([
-                    [dmu_dx[comp][i] - dmu_dx[self.elements[-1]][i] for comp in self.elements[:-1]]
+            hessian = np.array(
+                [
+                    [
+                        dmu_dx[comp][i] - dmu_dx[self.elements[-1]][i]
+                        for comp in self.elements[:-1]
+                    ]
                     for i in range(len(self.elements) - 1)
-            ])
+                ]
+            )
 
             # Transform Hessian to orthogonal space and perform eigenanalysis
-            orthogonalization_matrix = self.O[:len(self.elements) - 1, :len(self.elements) - 1]
-            eigen_values = np.sort(np.linalg.eig(orthogonalization_matrix.T @ Hessian @ orthogonalization_matrix)[0])
+            orthogonalization_matrix = self.ORTHOGONALIZATION[
+                : len(self.elements) - 1, : len(self.elements) - 1
+            ]
+            eigen_values = np.sort(
+                np.linalg.eig(
+                    orthogonalization_matrix.T @ hessian @ orthogonalization_matrix
+                )[0]
+            )
 
             return eigen_values
 
@@ -195,8 +296,7 @@ class StabilityMap:
             return [None] * (len(self.elements) - 1)
 
     def plot(self, show: bool = True, save: bool = False) -> tuple:
-        """
-        Plot the stability map.
+        """Plot the stability map.
 
         Args:
             show (bool): Whether to display the plot. Default is True.
@@ -212,19 +312,19 @@ class StabilityMap:
         import matplotlib.pyplot as plt
         from matplotlib.ticker import MaxNLocator
 
-        if len(self.elements) != 4:
+        required_elements = 4
+        if len(self.elements) != required_elements:
             raise ValueError("The number of elements must be exactly 4 for plotting.")
 
         if "negative_eigenvalues" not in self.compositions.columns:
-            raise KeyError("The 'negative_eigenvalues' column is missing. Please run the fit() method first.")
+            raise KeyError(
+                "The 'negative_eigenvalues' column is missing. Please run the fit() method first."
+            )
 
         def _generate_regular_pentagon(
-                radius: float = 0.5,
-                center: tuple = (0, 0),
-                rotation_angle: float = 0
+            radius: float = 0.5, center: tuple = (0, 0), rotation_angle: float = 0
         ) -> np.ndarray:
-            """
-            Generate vertices of a regular pentagon and rotate it by a given angle.
+            """Generate vertices of a regular pentagon and rotate it by a given angle.
 
             Args:
                 radius (float): The radius of the circumscribed circle.
@@ -241,21 +341,40 @@ class StabilityMap:
             # Rotate the pentagon by the given rotation_angle
             angles += rotation_angle
 
-            vertices = np.array([[center[0] + radius * np.cos(angle),
-                                  center[1] + radius * np.sin(angle)] for angle in angles])
+            vertices = np.array(
+                [
+                    [
+                        center[0] + radius * np.cos(angle),
+                        center[1] + radius * np.sin(angle),
+                    ]
+                    for angle in angles
+                ]
+            )
             return vertices
 
-        comps2 = np.dot(self.compositions[self.elements], _generate_regular_pentagon(radius=1, center=(0, 0), rotation_angle=np.pi / .952))
+        comps2 = np.dot(
+            self.compositions[self.elements],
+            _generate_regular_pentagon(
+                radius=1, center=(0, 0), rotation_angle=np.pi / 0.952
+            ),
+        )
 
-        self.compositions["proj0"], self.compositions["proj1"] = comps2[:, 0], comps2[:, 1]
+        self.compositions["proj0"], self.compositions["proj1"] = (
+            comps2[:, 0],
+            comps2[:, 1],
+        )
 
         fig, ax = plt.subplots()
 
-        scatter = ax.scatter(self.compositions["proj0"], self.compositions["proj1"],
-                             c=self.compositions["negative_eigenvalues"],
-                             cmap="viridis",
-                             alpha=0.7,
-                             vmin=0, vmax=len(self.elements) - 1)
+        scatter = ax.scatter(
+            self.compositions["proj0"],
+            self.compositions["proj1"],
+            c=self.compositions["negative_eigenvalues"],
+            cmap="viridis",
+            alpha=0.7,
+            vmin=0,
+            vmax=len(self.elements) - 1,
+        )
         cbar = plt.colorbar(scatter, label="Number of Negative Eigenvalues")
         cbar.ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
@@ -263,10 +382,25 @@ class StabilityMap:
         ax.axis("off")
 
         positions = [(0, 0), (1, 0), (1, 1), (0, 1)]
-        alignments = [("center", "center"), ("right", "center"), ("center", "center"), ("left", "center")]
+        alignments = [
+            ("center", "center"),
+            ("right", "center"),
+            ("center", "center"),
+            ("left", "center"),
+        ]
 
-        for (x, y), (ha, va), element in zip(positions, alignments, self.elements):
-            ax.text(x, y, element.title(), fontsize="large", ha=ha, va=va, transform=ax.transAxes)
+        for (x, y), (ha, va), element in zip(
+            positions, alignments, self.elements, strict=False
+        ):
+            ax.text(
+                x,
+                y,
+                element.title(),
+                fontsize="large",
+                ha=ha,
+                va=va,
+                transform=ax.transAxes,
+            )
 
         if save:
             system_name = "_".join(self.elements)

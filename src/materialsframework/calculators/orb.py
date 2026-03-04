@@ -1,12 +1,12 @@
-"""
-This module provides a class for performing calculations using the ORB potential.
+"""This module provides a class for performing calculations using the ORB potential.
 
 The `ORBCalculator` class is designed to calculate properties such as potential energy,
 forces, and stresses, and to perform structure relaxation using a specified ORB model.
 """
+
 from __future__ import annotations
 
-from typing import Literal, TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from materialsframework.tools.calculator import BaseCalculator
 from materialsframework.tools.md import BaseMDCalculator
@@ -19,8 +19,7 @@ __email__ = "dogu.sariturk@gmail.com"
 
 
 class ORBCalculator(BaseCalculator, BaseMDCalculator):
-    """
-    A calculator class for performing material property calculations and structure relaxation using the ORB potential.
+    """A calculator class for performing material property calculations and structure relaxation using the ORB potential.
 
     The `ORBCalculator` class supports the calculation of properties such as potential energy,
     forces, and stresses. It also allows for the relaxation of structures using a specified ORB model.
@@ -37,14 +36,15 @@ class ORBCalculator(BaseCalculator, BaseMDCalculator):
     AVAILABLE_PROPERTIES = ["energy", "free_energy", "forces", "stress"]
 
     def __init__(
-            self,
-            model: str = "orb-v3-conservative-inf-omat",
-            device: Literal["cuda", "cpu", "mps"] = "cpu",
-            precision: Literal["float32-high", "float32-highest", "float64"] = "float32-high",
-            **kwargs
+        self,
+        model: str = "orb-v3-conservative-inf-omat",
+        device: Literal["cuda", "cpu", "mps"] = "cpu",
+        precision: Literal[
+            "float32-high", "float32-highest", "float64"
+        ] = "float32-high",
+        **kwargs,
     ) -> None:
-        """
-        Initializes the ORBCalculator with the specified model and calculation settings.
+        """Initializes the ORBCalculator with the specified model and calculation settings.
 
         This method sets up the calculator with a predefined ORB model, which will be used
         to calculate properties and perform structure relaxation. Additional parameters
@@ -59,8 +59,16 @@ class ORBCalculator(BaseCalculator, BaseMDCalculator):
         Examples:
             >>> orb_calculator = ORBCalculator(model="orb-v2", device="cuda")
         """
-        basecalculator_kwargs = {key: kwargs.pop(key) for key in BaseCalculator.__init__.__annotations__ if key in kwargs}
-        basemd_kwargs = {key: kwargs.pop(key) for key in BaseMDCalculator.__init__.__annotations__ if key in kwargs}
+        basecalculator_kwargs = {
+            key: kwargs.pop(key)
+            for key in BaseCalculator.__init__.__annotations__
+            if key in kwargs
+        }
+        basemd_kwargs = {
+            key: kwargs.pop(key)
+            for key in BaseMDCalculator.__init__.__annotations__
+            if key in kwargs
+        }
 
         # BaseCalculator and BaseMDCalculator specific attributes
         BaseCalculator.__init__(self, **basecalculator_kwargs)
@@ -76,8 +84,7 @@ class ORBCalculator(BaseCalculator, BaseMDCalculator):
 
     @property
     def potential(self):
-        """
-        Loads and returns the ORB potential associated with this calculator instance.
+        """Loads and returns the ORB potential associated with this calculator instance.
 
         This property lazily loads the ORB model specified during initialization if it
         has not already been loaded. The loaded potential is then used for all subsequent
@@ -88,14 +95,14 @@ class ORBCalculator(BaseCalculator, BaseMDCalculator):
         """
         if self._potential is None:
             from orb_models.forcefield import pretrained
+
             model = pretrained.ORB_PRETRAINED_MODELS[self.model]
             self._potential = model(device=self.device, precision=self.precision)
         return self._potential
 
     @property
     def calculator(self) -> Calculator:
-        """
-        Creates and returns the ASE Calculator object associated with this calculator instance.
+        """Creates and returns the ASE Calculator object associated with this calculator instance.
 
         This property initializes the Calculator object using the ORB potential. If the Calculator
         object has already been created, it will return the existing instance.
@@ -104,9 +111,12 @@ class ORBCalculator(BaseCalculator, BaseMDCalculator):
             Calculator: The ASE Calculator object configured with the ORB potential.
         """
         if self._calculator is None:
-            from orb_models.forcefield.calculator import ORBCalculator as ORBASECalculator
+            from orb_models.forcefield.calculator import (
+                ORBCalculator as ORBASECalculator,
+            )
+
             self._calculator = ORBASECalculator(
-                    model=self.potential,
-                    device=self.device,
+                model=self.potential,
+                device=self.device,
             )
         return self._calculator

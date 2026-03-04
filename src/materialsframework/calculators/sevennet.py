@@ -1,12 +1,12 @@
-"""
-This module provides a class for performing calculations using the SevenNet potential.
+"""This module provides a class for performing calculations using the SevenNet potential.
 
 The `SevenNetCalculator` class is designed to calculate properties such as potential energy,
 forces, and stresses, and to perform structure relaxation using a specified SevenNet model.
 """
+
 from __future__ import annotations
 
-from typing import Literal, TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from materialsframework.tools.calculator import BaseCalculator
 from materialsframework.tools.md import BaseMDCalculator
@@ -19,8 +19,7 @@ __email__ = "dogu.sariturk@gmail.com"
 
 
 class SevenNetCalculator(BaseCalculator, BaseMDCalculator):
-    """
-    A calculator class for performing material property calculations and structure relaxation using the SevenNet potential.
+    """A calculator class for performing material property calculations and structure relaxation using the SevenNet potential.
 
     The `SevenNetCalculator` class supports the calculation of properties such as potential energy,
     forces, and stresses. It also allows for the relaxation of structures using a specified SevenNet model.
@@ -37,15 +36,14 @@ class SevenNetCalculator(BaseCalculator, BaseMDCalculator):
     AVAILABLE_PROPERTIES = ["energy", "energies", "free_energy", "forces", "stress"]
 
     def __init__(
-            self,
-            model: str = "7net-mf-ompa",
-            modal: Literal["mpa", "omat24"] = "mpa",
-            file_type: Literal["checkpoint", "torchscript"] = "checkpoint",
-            device: Literal["cuda", "cpu", "mps", "auto"] = "auto",
-            **kwargs
+        self,
+        model: str = "7net-mf-ompa",
+        modal: Literal["mpa", "omat24"] = "mpa",
+        file_type: Literal["checkpoint", "torchscript"] = "checkpoint",
+        device: Literal["cuda", "cpu", "mps", "auto"] = "auto",
+        **kwargs,
     ) -> None:
-        """
-        Initialize a SevenNetCalculator instance with a specified model and calculation settings.
+        """Initialize a SevenNetCalculator instance with a specified model and calculation settings.
 
         Args:
             model (str, optional): The name or the path of the SevenNet model to use. Defaults to '7net-mf-ompa'.
@@ -61,8 +59,16 @@ class SevenNetCalculator(BaseCalculator, BaseMDCalculator):
         Note:
             The remaining values for the arguments are set to the default values for the SevenNet potential.
         """
-        basecalculator_kwargs = {key: kwargs.pop(key) for key in BaseCalculator.__init__.__annotations__ if key in kwargs}
-        basemd_kwargs = {key: kwargs.pop(key) for key in BaseMDCalculator.__init__.__annotations__ if key in kwargs}
+        basecalculator_kwargs = {
+            key: kwargs.pop(key)
+            for key in BaseCalculator.__init__.__annotations__
+            if key in kwargs
+        }
+        basemd_kwargs = {
+            key: kwargs.pop(key)
+            for key in BaseMDCalculator.__init__.__annotations__
+            if key in kwargs
+        }
 
         # BaseCalculator and BaseMDCalculator specific attributes
         BaseCalculator.__init__(self, **basecalculator_kwargs)
@@ -78,8 +84,7 @@ class SevenNetCalculator(BaseCalculator, BaseMDCalculator):
 
     @property
     def calculator(self) -> Calculator:
-        """
-        Returns the ASE calculator associated with this instance.
+        """Returns the ASE calculator associated with this instance.
 
         If the calculator has not been initialized yet, it will be created
         using the potential attribute of this instance.
@@ -89,10 +94,11 @@ class SevenNetCalculator(BaseCalculator, BaseMDCalculator):
         """
         if self._calculator is None:
             from sevenn.calculator import SevenNetCalculator as SevenNetASECalculator
+
             self._calculator = SevenNetASECalculator(
-                    model=self.model,
-                    modal=self.modal,
-                    device=self.device,
-                    file_type=self.file_type,
+                model=self.model,
+                modal=self.modal,
+                device=self.device,
+                file_type=self.file_type,
             )
         return self._calculator

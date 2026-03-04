@@ -1,12 +1,12 @@
-"""
-This module provides a class for performing calculations and structure relaxation using the PET-MAD potential.
+"""This module provides a class for performing calculations and structure relaxation using the PET-MAD potential.
 
 The `PetMadCalculator` class is designed to calculate properties such as potential energy, forces,
 stresses, and to perform structure relaxation using a specified PET-MAD model.
 """
+
 from __future__ import annotations
 
-from typing import Literal, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from materialsframework.tools.calculator import BaseCalculator
 from materialsframework.tools.md import BaseMDCalculator
@@ -19,8 +19,7 @@ __email__ = "dogu.sariturk@gmail.com"
 
 
 class PetMadCalculator(BaseCalculator, BaseMDCalculator):
-    """
-    A calculator class for performing material property calculations and structure relaxation using the PET-MAD potential.
+    """A calculator class for performing material property calculations and structure relaxation using the PET-MAD potential.
 
     The `PetMadCalculator` class supports the calculation of properties such as potential energy,
     forces, and stresses. It also allows for the relaxation of structures using a specified PET-MAD model.
@@ -38,12 +37,11 @@ class PetMadCalculator(BaseCalculator, BaseMDCalculator):
     def __init__(
         self,
         model: str = "1.0.1",
-        checkpoint_path: Optional[str] = None,
+        checkpoint_path: str | None = None,
         device: Literal["cuda", "cpu", "mps"] = "cpu",
         **kwargs,
     ) -> None:
-        """
-        Initializes the PetMadCalculator with the specified model and calculation settings.
+        """Initializes the PetMadCalculator with the specified model and calculation settings.
 
         This method sets up the calculator with a predefined PET-MAD model, which will be used
         to calculate properties and perform structure relaxation. Additional parameters
@@ -56,8 +54,16 @@ class PetMadCalculator(BaseCalculator, BaseMDCalculator):
             device (str): The device to use for calculations. Options are "cuda", "cpu", or "mps".
             **kwargs: Additional keyword arguments passed to the `BaseCalculator` and `BaseMDCalculator` constructors.
         """
-        basecalculator_kwargs = {key: kwargs.pop(key) for key in BaseCalculator.__init__.__annotations__ if key in kwargs}
-        basemd_kwargs = {key: kwargs.pop(key) for key in BaseMDCalculator.__init__.__annotations__ if key in kwargs}
+        basecalculator_kwargs = {
+            key: kwargs.pop(key)
+            for key in BaseCalculator.__init__.__annotations__
+            if key in kwargs
+        }
+        basemd_kwargs = {
+            key: kwargs.pop(key)
+            for key in BaseMDCalculator.__init__.__annotations__
+            if key in kwargs
+        }
 
         # BaseCalculator and BaseMDCalculator specific attributes
         BaseCalculator.__init__(self, **basecalculator_kwargs)
@@ -72,8 +78,7 @@ class PetMadCalculator(BaseCalculator, BaseMDCalculator):
 
     @property
     def calculator(self) -> Calculator:
-        """
-        Creates and returns the ASE Calculator object associated with this calculator instance.
+        """Creates and returns the ASE Calculator object associated with this calculator instance.
 
         This property initializes the Calculator object using the PET-MAD potential and other settings
         specified during the initialization of this calculator. The Calculator object is then returned
@@ -84,6 +89,7 @@ class PetMadCalculator(BaseCalculator, BaseMDCalculator):
         """
         if self._calculator is None:
             from pet_mad.calculator import PETMADCalculator
+
             self._calculator = PETMADCalculator(
                 version=self.model,
                 checkpoint_path=self.checkpoint_path,

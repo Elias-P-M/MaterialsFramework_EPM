@@ -1,12 +1,12 @@
-"""
-This module provides a class for performing calculations using the M3GNet potential.
+"""This module provides a class for performing calculations using the M3GNet potential.
 
 The `M3GNetCalculator` class is designed to calculate properties such as potential energy,
 forces, and stresses, and to perform structure relaxation using a specified M3GNet model.
 """
+
 from __future__ import annotations
 
-from typing import Literal, TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from materialsframework.tools.calculator import BaseCalculator
 from materialsframework.tools.md import BaseMDCalculator
@@ -20,8 +20,7 @@ __email__ = "dogu.sariturk@gmail.com"
 
 
 class M3GNetCalculator(BaseCalculator, BaseMDCalculator):
-    """
-    A calculator class for performing material property calculations and structure relaxation using the M3GNet potential.
+    """A calculator class for performing material property calculations and structure relaxation using the M3GNet potential.
 
     The `M3GNetCalculator` class supports the calculation of properties such as potential energy,
     forces, and stresses. It also allows for the relaxation of structures using a specified M3GNet model.
@@ -37,16 +36,15 @@ class M3GNetCalculator(BaseCalculator, BaseMDCalculator):
     AVAILABLE_PROPERTIES = ["energy", "forces", "stress"]
 
     def __init__(
-            self,
-            model: str = "M3GNet-MP-2021.2.8-PES",
-            state_attr: torch.Tensor | None = None,
-            stress_weight: float = 1.0,
-            device: Literal["cpu", "cuda", "mps"] = "cpu",
-            n_cores: int | None = None,
-            **kwargs
+        self,
+        model: str = "M3GNet-MP-2021.2.8-PES",
+        state_attr: torch.Tensor | None = None,
+        stress_weight: float = 1.0,
+        device: Literal["cpu", "cuda", "mps"] = "cpu",
+        n_cores: int | None = None,
+        **kwargs,
     ) -> None:
-        """
-        Initializes the M3GNetCalculator with the specified model and calculation settings.
+        """Initializes the M3GNetCalculator with the specified model and calculation settings.
 
         This method sets up the calculator with a predefined M3GNet model, which will be used
         to calculate properties and perform structure relaxation. Additional parameters
@@ -72,8 +70,16 @@ class M3GNetCalculator(BaseCalculator, BaseMDCalculator):
         import dgl
         import torch
 
-        basecalculator_kwargs = {key: kwargs.pop(key) for key in BaseCalculator.__init__.__annotations__ if key in kwargs}
-        basemd_kwargs = {key: kwargs.pop(key) for key in BaseMDCalculator.__init__.__annotations__ if key in kwargs}
+        basecalculator_kwargs = {
+            key: kwargs.pop(key)
+            for key in BaseCalculator.__init__.__annotations__
+            if key in kwargs
+        }
+        basemd_kwargs = {
+            key: kwargs.pop(key)
+            for key in BaseMDCalculator.__init__.__annotations__
+            if key in kwargs
+        }
 
         # BaseCalculator and BaseMDCalculator specific attributes
         BaseCalculator.__init__(self, **basecalculator_kwargs)
@@ -95,8 +101,7 @@ class M3GNetCalculator(BaseCalculator, BaseMDCalculator):
 
     @property
     def calculator(self) -> Calculator:
-        """
-        Creates and returns the ASE Calculator object associated with this calculator instance.
+        """Creates and returns the ASE Calculator object associated with this calculator instance.
 
         This property initializes the Calculator object using the M3GNet potential and other
         relevant attributes such as `state_attr` and `stress_weight`. If the Calculator object
@@ -108,9 +113,10 @@ class M3GNetCalculator(BaseCalculator, BaseMDCalculator):
         if self._calculator is None:
             from matgl import load_model
             from matgl.ext.ase import PESCalculator
+
             self._calculator = PESCalculator(
-                    potential=load_model(self.model),
-                    state_attr=self.state_attr,
-                    stress_weight=self.stress_weight,
+                potential=load_model(self.model),
+                state_attr=self.state_attr,
+                stress_weight=self.stress_weight,
             )
         return self._calculator

@@ -1,16 +1,18 @@
-"""
-This module provides a class to generate displaced structures along the Bain Path.
+"""This module provides a class to generate displaced structures along the Bain Path.
 
 The `BainDisplacementTransformation` class allows users to generate structures that are deformed
 along the Bain path through a continuous deformation of the lattice.
 This transformation is useful in studying martensitic transformations and phase transitions in materials.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 import numpy as np
-from pymatgen.transformations.standard_transformations import DeformStructureTransformation
+from pymatgen.transformations.standard_transformations import (
+    DeformStructureTransformation,
+)
 
 if TYPE_CHECKING:
     from pymatgen.core import Structure
@@ -20,8 +22,7 @@ __email__ = "dogu.sariturk@gmail.com"
 
 
 class BainDisplacementTransformation:
-    """
-    A class used to generate displaced structures along the Bain Path.
+    """A class used to generate displaced structures along the Bain Path.
 
     The `BainDisplacementTransformation` class provides methods to generate a series of deformed structures
     by varying the c/a ratio in small steps, following the Bain transformation pathway. This pathway is significant
@@ -30,13 +31,12 @@ class BainDisplacementTransformation:
     """
 
     def __init__(
-            self,
-            start: float = 0.89,
-            stop: float = 1.4,
-            step: float = 0.01,
+        self,
+        start: float = 0.89,
+        stop: float = 1.4,
+        step: float = 0.01,
     ) -> None:
-        """
-        Initializes the `BainDisplacementTransformation` object.
+        """Initializes the `BainDisplacementTransformation` object.
 
         Args:
             start (float, optional): The starting displacement value for the c/a ratio. Defaults to 0.89.
@@ -47,11 +47,10 @@ class BainDisplacementTransformation:
         self.displaced_structures: dict[float, Structure] = {}
 
     def apply_transformation(
-            self,
-            structure: Structure,
+        self,
+        structure: Structure,
     ) -> None:
-        """
-        Applies the Bain displacement transformation to generate structures along the Bain path.
+        """Applies the Bain displacement transformation to generate structures along the Bain path.
 
         This method generates displaced structures for each value of the c/a ratio in the specified range.
         If the `is_relaxed` flag is set to False, the method relaxes the input structure before applying
@@ -65,15 +64,13 @@ class BainDisplacementTransformation:
         """
         for c_a in self.c_a_ratios:
             delta = np.cbrt(1 / c_a) - 1
-            self.displaced_structures[c_a] = self._get_displaced_structures(delta, structure)
+            self.displaced_structures[c_a] = self._get_displaced_structures(
+                delta, structure
+            )
 
     @staticmethod
-    def _get_displaced_structures(
-            delta: float,
-            structure: Structure
-    ) -> Structure:
-        """
-        Generates a displaced structure by applying a deformation along the Bain path.
+    def _get_displaced_structures(delta: float, structure: Structure) -> Structure:
+        """Generates a displaced structure by applying a deformation along the Bain path.
 
         The deformation is applied based on the given `delta` value, which modifies the lattice parameters
         in accordance with the Bain transformation. A new structure is returned with the deformation applied.
@@ -85,9 +82,11 @@ class BainDisplacementTransformation:
         Returns:
             Structure: The displaced structure with the Bain transformation applied.
         """
-        transformation_matrix = ([[1 + delta, 0, 0],
-                                  [0, 1 + delta, 0],
-                                  [0, 0, 1 / (1 + delta) ** 2]])
+        transformation_matrix = [
+            [1 + delta, 0, 0],
+            [0, 1 + delta, 0],
+            [0, 0, 1 / (1 + delta) ** 2],
+        ]
 
         deformation = DeformStructureTransformation(deformation=transformation_matrix)
         return deformation.apply_transformation(structure)

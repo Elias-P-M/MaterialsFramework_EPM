@@ -1,12 +1,12 @@
-"""
-This module provides a class for performing calculations using the MatterSim potential.
+"""This module provides a class for performing calculations using the MatterSim potential.
 
 The `MatterSimCalculator` class is designed to calculate properties such as potential energy,
 forces, and stresses, and to perform structure relaxation using a specified MatterSim model.
 """
+
 from __future__ import annotations
 
-from typing import Literal, TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from materialsframework.tools.calculator import BaseCalculator
 from materialsframework.tools.md import BaseMDCalculator
@@ -19,8 +19,7 @@ __email__ = "dogu.sariturk@gmail.com"
 
 
 class MatterSimCalculator(BaseCalculator, BaseMDCalculator):
-    """
-    A calculator class for performing material property calculations and structure relaxation using the MatterSim potential.
+    """A calculator class for performing material property calculations and structure relaxation using the MatterSim potential.
 
     The `MatterSimCalculator` class supports the calculation of properties such as potential energy,
     forces, and stresses. It also allows for the relaxation of structures using a specified MatterSim model.
@@ -36,16 +35,15 @@ class MatterSimCalculator(BaseCalculator, BaseMDCalculator):
     AVAILABLE_PROPERTIES = ["energy", "free_energy", "forces", "stress"]
 
     def __init__(
-            self,
-            model: str = "mattersim-v1.0.0-5m",
-            args_dict: dict | None = None,
-            compute_stress: bool = True,
-            stress_weight: float = 1.0,
-            device: Literal["cuda", "cpu"] = "cpu",
-            **kwargs
+        self,
+        model: str = "mattersim-v1.0.0-5m",
+        args_dict: dict | None = None,
+        compute_stress: bool = True,
+        stress_weight: float = 1.0,
+        device: Literal["cuda", "cpu"] = "cpu",
+        **kwargs,
     ) -> None:
-        """
-        Initializes the MatterSimCalculator with the specified model and calculation settings.
+        """Initializes the MatterSimCalculator with the specified model and calculation settings.
 
         This method sets up the calculator with a predefined MatterSim model, which will be used
         to calculate properties and perform structure relaxation. Additional parameters
@@ -67,8 +65,16 @@ class MatterSimCalculator(BaseCalculator, BaseMDCalculator):
         Note:
             The remaining parameters for the MatterSim potential are set to their default values.
         """
-        basecalculator_kwargs = {key: kwargs.pop(key) for key in BaseCalculator.__init__.__annotations__ if key in kwargs}
-        basemd_kwargs = {key: kwargs.pop(key) for key in BaseMDCalculator.__init__.__annotations__ if key in kwargs}
+        basecalculator_kwargs = {
+            key: kwargs.pop(key)
+            for key in BaseCalculator.__init__.__annotations__
+            if key in kwargs
+        }
+        basemd_kwargs = {
+            key: kwargs.pop(key)
+            for key in BaseMDCalculator.__init__.__annotations__
+            if key in kwargs
+        }
 
         # BaseCalculator and BaseMDCalculator specific attributes
         BaseCalculator.__init__(self, **basecalculator_kwargs)
@@ -86,8 +92,7 @@ class MatterSimCalculator(BaseCalculator, BaseMDCalculator):
 
     @property
     def potential(self):
-        """
-        Loads and returns the MatterSim potential associated with this calculator instance.
+        """Loads and returns the MatterSim potential associated with this calculator instance.
 
         This property lazily loads the MatterSim model specified during initialization if it
         has not already been loaded. The loaded potential is then used for all subsequent
@@ -98,16 +103,15 @@ class MatterSimCalculator(BaseCalculator, BaseMDCalculator):
         """
         if self._potential is None:
             from mattersim.forcefield import Potential
+
             self._potential = Potential.from_checkpoint(
-                    load_path=self.model,
-                    device=self.device
+                load_path=self.model, device=self.device
             )
         return self._potential
 
     @property
     def calculator(self) -> Calculator:
-        """
-        Creates and returns the ASE Calculator object associated with this calculator instance.
+        """Creates and returns the ASE Calculator object associated with this calculator instance.
 
         This property creates an ASE Calculator object configured with the MatterSim potential
         and the specified calculation settings. The calculator is then used for all subsequent
@@ -117,12 +121,15 @@ class MatterSimCalculator(BaseCalculator, BaseMDCalculator):
             Calculator: The ASE Calculator object configured with the MatterSim potential.
         """
         if self._calculator is None:
-            from mattersim.forcefield import MatterSimCalculator as MatterSimASECalculator
+            from mattersim.forcefield import (
+                MatterSimCalculator as MatterSimASECalculator,
+            )
+
             self._calculator = MatterSimASECalculator(
-                    potential=self.potential,
-                    args_dict=self.args_dict,
-                    compute_stress=self.compute_stress,
-                    stress_weight=self.stress_weight,
-                    device=self.device,
+                potential=self.potential,
+                args_dict=self.args_dict,
+                compute_stress=self.compute_stress,
+                stress_weight=self.stress_weight,
+                device=self.device,
             )
         return self._calculator

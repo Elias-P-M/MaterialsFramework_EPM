@@ -1,12 +1,12 @@
-"""
-This module provides a class for performing calculations and structure relaxation using the NewtonNet potential.
+"""This module provides a class for performing calculations and structure relaxation using the NewtonNet potential.
 
 The `NewtonNetCalculator` class is designed to calculate properties such as potential energy, forces,
 stresses, and to perform structure relaxation using a specified NewtonNet model.
 """
+
 from __future__ import annotations
 
-from typing import Literal, TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from materialsframework.tools.calculator import BaseCalculator
 from materialsframework.tools.md import BaseMDCalculator
@@ -19,8 +19,7 @@ __email__ = "dogu.sariturk@gmail.com"
 
 
 class NewtonNetCalculator(BaseCalculator, BaseMDCalculator):
-    """
-    A calculator class for performing material property calculations and structure relaxation using the NewtonNet potential.
+    """A calculator class for performing material property calculations and structure relaxation using the NewtonNet potential.
 
     The `NewtonNetCalculator` class supports the calculation of properties such as potential energy,
     forces, and stresses. It also allows for the relaxation of structures using a specified NewtonNet model.
@@ -36,15 +35,14 @@ class NewtonNetCalculator(BaseCalculator, BaseMDCalculator):
     AVAILABLE_PROPERTIES = ["energy", "free_energy", "forces", "hessian", "stress"]
 
     def __init__(
-            self,
-            model: str | Literal["ani1", "ani1x", "t1x"] = "t1x",
-            properties: list = ["energy", "free_energy", "forces", "hessian", "stress"],
-            device: Literal["cpu", "cuda"] = "cpu",
-            precision: Literal["float64", "float32", "float16"] = "float32",
-            **kwargs
+        self,
+        model: str | Literal["ani1", "ani1x", "t1x"] = "t1x",
+        properties: list = None,
+        device: Literal["cpu", "cuda"] = "cpu",
+        precision: Literal["float64", "float32", "float16"] = "float32",
+        **kwargs,
     ) -> None:
-        """
-        Initializes the NewtonNetCalculator with the specified model and calculation settings.
+        """Initializes the NewtonNetCalculator with the specified model and calculation settings.
 
         This method sets up the calculator with a predefined NewtonNet model, which will be used
         to calculate properties and perform structure relaxation. Additional parameters
@@ -57,8 +55,16 @@ class NewtonNetCalculator(BaseCalculator, BaseMDCalculator):
             precision (Literal["float64", "float32", "float16"]): Floating-point precision of the calculations. Defaults to "float32".
             **kwargs: Additional keyword arguments passed to the `BaseCalculator` and `BaseMDCalculator` constructors.
         """
-        basecalculator_kwargs = {key: kwargs.pop(key) for key in BaseCalculator.__init__.__annotations__ if key in kwargs}
-        basemd_kwargs = {key: kwargs.pop(key) for key in BaseMDCalculator.__init__.__annotations__ if key in kwargs}
+        basecalculator_kwargs = {
+            key: kwargs.pop(key)
+            for key in BaseCalculator.__init__.__annotations__
+            if key in kwargs
+        }
+        basemd_kwargs = {
+            key: kwargs.pop(key)
+            for key in BaseMDCalculator.__init__.__annotations__
+            if key in kwargs
+        }
 
         # BaseCalculator and BaseMDCalculator specific attributes
         BaseCalculator.__init__(self, **basecalculator_kwargs)
@@ -74,8 +80,7 @@ class NewtonNetCalculator(BaseCalculator, BaseMDCalculator):
 
     @property
     def calculator(self) -> Calculator:
-        """
-        Creates and returns the ASE Calculator object associated with this calculator instance.
+        """Creates and returns the ASE Calculator object associated with this calculator instance.
 
         This property initializes the Calculator object using the NewtonNet potential and other settings
         specified during the initialization of this calculator. The Calculator object is then returned
@@ -85,11 +90,14 @@ class NewtonNetCalculator(BaseCalculator, BaseMDCalculator):
             Calculator: The ASE Calculator object configured with the NewtonNet potential.
         """
         if self._calculator is None:
-            from newtonnet.utils.ase_interface import MLAseCalculator as NewtonNetASECalculator
+            from newtonnet.utils.ase_interface import (
+                MLAseCalculator as NewtonNetASECalculator,
+            )
+
             self._calculator = NewtonNetASECalculator(
-                    model_path=self.model,
-                    properties=self.properties,
-                    device=self.device,
-                    precision=self.precision
+                model_path=self.model,
+                properties=self.properties,
+                device=self.device,
+                precision=self.precision,
             )
         return self._calculator

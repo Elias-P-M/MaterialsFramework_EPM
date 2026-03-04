@@ -1,11 +1,11 @@
-"""
-This module provides a class to perform a Bain transformation on a given structure.
+"""This module provides a class to perform a Bain transformation on a given structure.
 
 The `BainPathAnalyzer` class calculates the potential energies along the Bain transformation path,
 which describes the structural transition between body-centered cubic (BCC) and face-centered cubic (FCC)
 phases. This transformation is essential for understanding phase stability and transformations in various
 metallic systems.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -17,6 +17,7 @@ from materialsframework.transformations.bain import BainDisplacementTransformati
 
 if TYPE_CHECKING:
     from pymatgen.core import Structure
+
     from materialsframework.tools.calculator import BaseCalculator
 
 __author__ = "Doguhan Sariturk"
@@ -24,8 +25,7 @@ __email__ = "dogu.sariturk@gmail.com"
 
 
 class BainPathAnalyzer:
-    """
-    A class used to analyze the Bain transformation path for a given structure.
+    """A class used to analyze the Bain transformation path for a given structure.
 
     The `BainPathAnalyzer` class provides methods to perform a Bain transformation on an undeformed
     structure and calculate the potential energies at various c/a ratios along the transformation path.
@@ -39,8 +39,7 @@ class BainPathAnalyzer:
         calculator: BaseCalculator | None = None,
         bain_transformation: BainDisplacementTransformation | None = None,
     ) -> None:
-        """
-        Initializes the `BainPathAnalyzer` object.
+        """Initializes the `BainPathAnalyzer` object.
 
         Args:
             start (float, optional): The starting displacement value for the c/a ratio. Defaults to 0.89.
@@ -61,12 +60,9 @@ class BainPathAnalyzer:
         self._bain_transformation = bain_transformation
 
     def calculate(
-            self,
-            structure: Structure | Atoms,
-            is_relaxed: bool = False
+        self, structure: Structure | Atoms, is_relaxed: bool = False
     ) -> dict[str, list]:
-        """
-        Calculates the potential energies along the Bain Path for the given undeformed structure.
+        """Calculates the potential energies along the Bain Path for the given undeformed structure.
 
         This method applies the Bain transformation to the input structure, generating a series of deformed
         structures corresponding to different c/a ratios along the Bain path. It then calculates the potential
@@ -85,7 +81,9 @@ class BainPathAnalyzer:
             ValueError: If the calculator object does not have the 'energy' property implemented.
         """
         if "energy" not in self.calculator.AVAILABLE_PROPERTIES:
-            raise ValueError("The calculator object must have the 'energy' property implemented.")
+            raise ValueError(
+                "The calculator object must have the 'energy' property implemented."
+            )
 
         if isinstance(structure, Atoms):
             structure = self.ase_adaptor.get_structure(structure)
@@ -96,18 +94,18 @@ class BainPathAnalyzer:
         self.bain_transformation.apply_transformation(structure=structure)
 
         c_a_list, energy_list = zip(
-                *[(c_a, self.calculator.calculate(structure=deformed_structure)["energy"])
-                  for c_a, deformed_structure in self.bain_transformation.displaced_structures.items()])
+            *[
+                (c_a, self.calculator.calculate(structure=deformed_structure)["energy"])
+                for c_a, deformed_structure in self.bain_transformation.displaced_structures.items()
+            ],
+            strict=False,
+        )
 
-        return {
-                "c_a_list": c_a_list,
-                "energy_list": energy_list
-        }
+        return {"c_a_list": c_a_list, "energy_list": energy_list}
 
     @property
     def calculator(self) -> BaseCalculator:
-        """
-        Returns the calculator instance used for energy calculations.
+        """Returns the calculator instance used for energy calculations.
 
         If the calculator instance is not already initialized, this method creates a new `M3GNetCalculator` instance.
 
@@ -116,13 +114,13 @@ class BainPathAnalyzer:
         """
         if self._calculator is None:
             from materialsframework.calculators.m3gnet import M3GNetCalculator
+
             self._calculator = M3GNetCalculator()
         return self._calculator
 
     @property
     def bain_transformation(self) -> BainDisplacementTransformation:
-        """
-        Returns the Bain displacement transformation object used to apply Bain displacements.
+        """Returns the Bain displacement transformation object used to apply Bain displacements.
 
         If the transformation instance is not already initialized, this method creates a new `BainDisplacementTransformation` instance.
 
@@ -131,8 +129,6 @@ class BainPathAnalyzer:
         """
         if self._bain_transformation is None:
             self._bain_transformation = BainDisplacementTransformation(
-                    start=self.start,
-                    stop=self.stop,
-                    step=self.step
+                start=self.start, stop=self.stop, step=self.step
             )
         return self._bain_transformation

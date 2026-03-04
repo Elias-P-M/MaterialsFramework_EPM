@@ -1,4 +1,5 @@
-""" This package contains the analysis tools for MaterialsFramework. """
+"""This package contains the analysis tools for MaterialsFramework."""
+
 from .annni import ANNNIStackingFaultAnalyzer
 from .bain import BainPathAnalyzer
 from .cubic_elastic_constants import CubicElasticConstantsAnalyzer
@@ -11,11 +12,13 @@ from .phonopy import PhonopyAnalyzer
 __author__ = "Doguhan Sariturk"
 __email__ = "dogu.sariturk@gmail.com"
 
-__all__ = ["ANNNIStackingFaultAnalyzer",
-           "BainPathAnalyzer",
-           "CubicElasticConstantsAnalyzer",
-           "ElasticConstantsAnalyzer",
-           "EOSAnalyzer",
-           "FormationEnergyAnalyzer",
-           "Phono3pyAnalyzer",
-           "PhonopyAnalyzer"]
+__all__ = [
+    "ANNNIStackingFaultAnalyzer",
+    "BainPathAnalyzer",
+    "CubicElasticConstantsAnalyzer",
+    "ElasticConstantsAnalyzer",
+    "EOSAnalyzer",
+    "FormationEnergyAnalyzer",
+    "Phono3pyAnalyzer",
+    "PhonopyAnalyzer",
+]

@@ -1,6 +1,4 @@
-"""
-This module provides the `BaseMDCalculator` class, which is used to perform
-Molecular Dynamics (MD) simulations.
+"""This module provides the `BaseMDCalculator` class for Molecular Dynamics simulations.
 
 The `BaseMDCalculator` class allows users to set up and run MD simulations with different ensembles,
 including NVE, NVT (Nose-Hoover), NPT (Nose-Hoover), NPT (Berendsen), and Inhomogeneous NPT (Berendsen).
@@ -11,15 +9,14 @@ and symmetry constraints.
 from __future__ import annotations
 
 from abc import ABC
-from typing import Literal, TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 from ase import units
-from ase.calculators.calculator import Calculator
 from ase.constraints import FixSymmetry
 from ase.md import MDLogger, VelocityVerlet
 from ase.md.npt import NPT
-from ase.md.nptberendsen import NPTBerendsen, Inhomogeneous_NPTBerendsen
+from ase.md.nptberendsen import Inhomogeneous_NPTBerendsen, NPTBerendsen
 from ase.md.velocitydistribution import (
     MaxwellBoltzmannDistribution,
     Stationary,
@@ -31,16 +28,17 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from materialsframework.tools.trajectory import TrajectoryObserver
 
 if TYPE_CHECKING:
-    from ase import Atoms
     from typing import Any
+
+    from ase import Atoms
+    from ase.calculators.calculator import Calculator
 
 __author__ = "Doguhan Sariturk"
 __email__ = "dogu.sariturk@gmail.com"
 
 
 class BaseMDCalculator(ABC):
-    """
-    A calculator class for performing Molecular Dynamics (MD) simulations using universal potentials.
+    """A calculator class for performing Molecular Dynamics (MD) simulations using universal potentials.
 
     The `BaseMDCalculator` class supports different ensembles such as NVE, NVT (Nose-Hoover), and NPT (Nose-Hoover),
     and provides a range of customizable parameters to control the simulation environment, including temperature,
@@ -73,8 +71,7 @@ class BaseMDCalculator(ABC):
         loginterval: int = 1,
         interval: int = 1,
     ) -> None:
-        """
-        Initializes the `BaseMDCalculator` with the specified parameters for running MD simulations.
+        """Initializes the `BaseMDCalculator` with the specified parameters for running MD simulations.
 
         Args:
             fix_symmetry (bool, optional): Whether to apply symmetry constraints during the simulation. Defaults to False.
@@ -133,8 +130,7 @@ class BaseMDCalculator(ABC):
 
     @property
     def calculator(self) -> Calculator:
-        """
-        Returns the ASE Calculator object associated with this instance.
+        """Returns the ASE Calculator object associated with this instance.
 
         This property must be implemented in subclasses of BaseMDCalculator.
         The returned Calculator object is used to perform the molecular dynamics
@@ -147,11 +143,12 @@ class BaseMDCalculator(ABC):
             Calculator: An ASE Calculator instance configured for the specific
             molecular dynamics task.
         """
-        raise NotImplementedError("Subclasses must implement the 'calculator' property to return a valid ASE Calculator instance.")
+        raise NotImplementedError(
+            "Subclasses must implement the 'calculator' property to return a valid ASE Calculator instance."
+        )
 
     def _initialize_npt_nose_hoover(self, ase_atoms: Atoms) -> None:
-        """
-        Initializes the NPT Nose-Hoover ensemble for MD simulations.
+        """Initializes the NPT Nose-Hoover ensemble for MD simulations.
 
         Args:
             ase_atoms (Atoms): The ASE atoms object used in the simulation.
@@ -167,8 +164,7 @@ class BaseMDCalculator(ABC):
         )
 
     def _initialize_nvt_nose_hoover(self, ase_atoms: Atoms) -> None:
-        """
-        Initializes the NVT Nose-Hoover ensemble for MD simulations.
+        """Initializes the NVT Nose-Hoover ensemble for MD simulations.
 
         Args:
             ase_atoms (Atoms): The ASE atoms object used in the simulation.
@@ -183,8 +179,7 @@ class BaseMDCalculator(ABC):
         )
 
     def _initialize_nve(self, ase_atoms: Atoms) -> None:
-        """
-        Initializes the NVE ensemble for MD simulations.
+        """Initializes the NVE ensemble for MD simulations.
 
         Args:
             ase_atoms (Atoms): The ASE atoms object used in the simulation.
@@ -195,8 +190,7 @@ class BaseMDCalculator(ABC):
         )
 
     def _initialize_npt_berendsen(self, ase_atoms: Atoms) -> None:
-        """
-        Initializes the NPT Berendsen ensemble for MD simulations.
+        """Initializes the NPT Berendsen ensemble for MD simulations.
 
         Args:
             ase_atoms (Atoms): The ASE atoms object used in the simulation.
@@ -212,8 +206,7 @@ class BaseMDCalculator(ABC):
         )
 
     def _initialize_inhomogeneous_npt_berendsen(self, ase_atoms: Atoms) -> None:
-        """
-        Initializes the Inhomogeneous NPT Berendsen ensemble for MD simulations.
+        """Initializes the Inhomogeneous NPT Berendsen ensemble for MD simulations.
 
         Args:
             ase_atoms (Atoms): The ASE atoms object used in the simulation.
@@ -230,12 +223,9 @@ class BaseMDCalculator(ABC):
         )
 
     def run(
-            self,
-            structure: Atoms | Structure | Molecule,
-            steps: int
+        self, structure: Atoms | Structure | Molecule, steps: int
     ) -> dict[str, Any]:
-        """
-        Executes the Molecular Dynamics (MD) simulation using the specified calculator.
+        """Executes the Molecular Dynamics (MD) simulation using the specified calculator.
 
         This method performs the simulation based on the provided structure and
         simulation parameters such as the ensemble type and the number of MD steps.
@@ -248,7 +238,6 @@ class BaseMDCalculator(ABC):
             dict[str, list]: A dictionary containing the results of the MD simulation, including
                              total energy, potential energy, kinetic energy, forces, stresses, and temperature.
         """
-
         ase_atoms = (
             self.ase_adaptor.get_atoms(structure)
             if isinstance(structure, (Structure, Molecule))
@@ -281,7 +270,9 @@ class BaseMDCalculator(ABC):
         if self.logfile:
             self._initialize_logger(ase_atoms)
 
-        self.trajectory = TrajectoryObserver(ase_atoms, include_temperature=True, include_velocities=True)
+        self.trajectory = TrajectoryObserver(
+            ase_atoms, include_temperature=True, include_velocities=True
+        )
         self.dyn.attach(self.trajectory, interval=self.interval)
 
         self.dyn.run(steps)
@@ -300,8 +291,7 @@ class BaseMDCalculator(ABC):
         return self.results
 
     def _initialize_logger(self, ase_atoms) -> None:
-        """
-        Initializes the logger for the MD simulation.
+        """Initializes the logger for the MD simulation.
 
         Args:
             ase_atoms (Atoms): The ASE atoms object used in the simulation.
@@ -316,8 +306,7 @@ class BaseMDCalculator(ABC):
 
     @staticmethod
     def _upper_triangular_cell(atoms: Atoms) -> None:
-        """
-        Converts the unit cell of the provided atoms object to upper triangular form.
+        """Converts the unit cell of the provided atoms object to upper triangular form.
 
         This operation ensures that the cell parameters are in a suitable form for
         MD simulations.
