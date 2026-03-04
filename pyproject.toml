@@ -1,17 +1,88 @@
 [project]
 name = "materialsframework"
 version = "0.12.0"
+description = "A modular Python framework for deploying, benchmarking, and experimenting with machine learning interatomic potentials (MLIPs)"
+readme = "README.md"
+requires-python = ">=3.11"
 authors = [
     { name = "Doguhan Sariturk", email = "doguhan.sariturk@gmail.com" },
 ]
-description = "MaterialsFramework"
-readme = "README.md"
-license = { text = "GPL-3.0-only" }
+license = { text = "GPL-3.0-or-later" }
 classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering",
     "Topic :: Utilities",
     "Programming Language :: Python"
+]
+dependencies = [
+    "ase==3.27.0",
+    "matplotlib==3.10.8",
+    "numpy<=2",
+    "pandarallel==1.6.5",
+    "pandas<=3",
+    "psutil==7.2.2",
+    "pycalphad==0.11.1",
+    "pymatgen==2025.10.7",
+    "scipy==1.17.1",
+    "spglib!=2.7.0",
+]
+
+[dependency-groups]
+dev = [
+    "prek>=0.3.4",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.15.4",
+    "ty>=0.0.20",
+]
+
+[project.optional-dependencies]
+docs = [
+    "mkdocs-material>=9.7.4",
+    "mkdocstrings[python]>=1.0.3",
+]
+phonons = [
+    "phonopy",
+    "phono3py",
+]
+cluster-expansion = [
+    "icet==3.2",
+    "trainstation==1.2",
+]
+
+sqs = [
+    "sqsgenerator @ git+https://github.com/dgehringer/sqsgenerator@v0.5.4#subdirectory=python",
+]
+
+matgl     = ["matgl", "dgl"]
+chgnet    = ["chgnet"]
+mace      = ["mace-torch"]
+alignn    = ["alignn"]
+deepmd    = ["deepmd-kit"]
+orb       = ["orb-models"]
+nequip    = ["nequip"]
+nequix    = ["nequix"]
+sevennet  = ["sevenn"]
+mattersim = ["mattersim"]
+grace     = ["tensorpotential"]
+fairchem  = ["fairchem-core"]
+eqv2      = ["fairchem-core"]
+esen      = ["fairchem-core"]
+uma       = ["fairchem-core"]
+newtonnet = ["newtonnet"]
+petmad    = ["pet-mad"]
+alphanet = ["alphanet @ git+https://github.com/zmyybc/AlphaNet.git"]
+eqnorm   = ["eqnorm @ git+https://github.com/yzchen08/eqnorm.git"]
+gptff    = ["gptff @ git+https://github.com/atomly-materials-research-lab/GPTFF.git"]
+hienet   = ["hienet @ git+https://github.com/divelab/AIRS.git#subdirectory=OpenMat/HIENet"]
+bundle-main = [
+    "materialsframework[matgl,chgnet,deepmd,mattersim,sevennet,nequip,nequix,newtonnet,petmad,alphanet,eqnorm,fairchem,gptff,hienet,orb,alignn]",
+]
+bundle-mace = [
+    "materialsframework[mace,matgl,chgnet,deepmd,sevennet,nequip,nequix,newtonnet,petmad,alphanet,gptff,hienet,orb,alignn]",
+]
+bundle-grace = [
+    "materialsframework[grace,matgl,chgnet,deepmd,mattersim,sevennet,nequip,newtonnet,petmad,alphanet,eqnorm,fairchem,gptff,hienet,orb,alignn]",
 ]
 
 [project.urls]
@@ -19,6 +90,64 @@ Home-page = "https://github.com/dogusariturk/MaterialsFramework/"
 Issues = "https://github.com/dogusariturk/MaterialsFramework/issues"
 Repository = "https://github.com/dogusariturk/MaterialsFramework.git"
 
+[tool.uv]
+extra-build-dependencies = { torch-scatter = ["torch"], torch-cluster = ["torch"], torch-sparse = ["torch"] }
+conflicts = [
+    [
+        { extra = "mace" },
+        { extra = "bundle-mace" },
+        { extra = "eqnorm" },
+        { extra = "eqv2" },
+        { extra = "esen" },
+        { extra = "uma" },
+        { extra = "fairchem" },
+        { extra = "mattersim" },
+        { extra = "bundle-main" },
+        { extra = "bundle-grace" },
+    ],
+    [
+        { extra = "nequix" },
+        { extra = "grace" },
+        { extra = "bundle-main" },
+        { extra = "bundle-mace" },
+        { extra = "bundle-grace" },
+    ],
+]
+
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 130
+
+[tool.ruff.lint]
+select = [
+    "ERA", # Eradicate
+    "B",   # flake8-bugbear
+    "A",   # flake8-builtins
+    "C4",  # flake8-comprehensions
+    "FA",  # flake8-future-annotations
+    "ICN", # flake8-import-conventions
+    "Q",   # flake8-quotes
+    "SIM", # flake8-simplify
+    "TC",  # flake8-type-checking
+    "PTH", # flake8-use-pathlib
+    "I",   # isort
+    "N",   # pep8-naming
+    "E",   # pycodestyle Errors
+    "W",   # pycodestyle Warnings
+    "D",   # pydocstyle
+    "F",   # Pyflakes
+    "PL",  # Pylint
+    "UP",  # pyupgrade
+]
+ignore = [
+    "PLR0913", # Too many arguments in function definition
+    "ERA001",  # Eradicate: Commented-out code
+    "PLC0415", # `import` should be at the top-level of a file
+]
+pydocstyle.convention = "google"
+
+[tool.ruff.format]
+docstring-code-format = true
