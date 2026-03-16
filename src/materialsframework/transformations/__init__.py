@@ -29,6 +29,10 @@ _TRANSFORMATION_MAP: dict[str, tuple[str, str]] = {
         "ElasticConstantsDeformationTransformation",
     ),
     "EOSTransformation": ("materialsframework.transformations.eos", "EOSTransformation"),
+    "FormationEnergyTransformation": (
+        "materialsframework.transformations.formation_energy",
+        "FormationEnergyTransformation",
+    ),
     "HSolubilityTransformation": ("materialsframework.transformations.h_solubility", "HSolubilityTransformation"),
     "Phono3pyDisplacementTransformation": (
         "materialsframework.transformations.phono3py",
