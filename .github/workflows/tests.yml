@@ -85,7 +85,7 @@ jobs:
             tests: tests/analysis/test_phono3py.py tests/transformations/test_phono3py.py
           - name: sqsgen
             install: --extra sqsgen
-            tests: tests/transformations/test_sqs.py tests/transformations/test_annni.py
+            tests: tests/tools/test_sqsgen.py tests/transformations/test_annni.py
           - name: calphad
             install: --extra calphad
             tests: >-
@@ -110,6 +110,18 @@ jobs:
           - name: eqnorm
             install: --extra eqnorm
             tests: tests/calculators/test_eqnorm.py
+          - name: alphanet
+            install: --extra alphanet
+            tests: tests/calculators/test_alphanet.py
+          - name: gptff
+            install: --extra gptff
+            tests: tests/calculators/test_gptff.py
+          - name: hienet
+            install: --extra hienet
+            tests: tests/calculators/test_hienet.py
+          - name: ce
+            install: --extra ce
+            tests: tests/tools/test_cluster_expansion.py
 
     steps:
       - name: Checkout code
