@@ -80,7 +80,14 @@ If `uv` reports an extra conflict, choose a different combination using the dedi
 | SevenNet | `sevennet` | `sevenn>=0.12.0` |
 | UMA | `uma` | `fairchem-core>=2.0.0` |
 
-`PosEGNNCalculator` is intentionally not installable through managed extras. `VASPCalculator` is external and requires a separately installed licensed VASP binary.
+`VASPCalculator` is external and requires a separately installed licensed VASP binary.
+
+`PosEGNNCalculator` is not available on any public package index, so it cannot be installed via pip or uv. To use it, clone the repository and add the module directory to `PYTHONPATH` manually:
+
+```bash
+git clone --depth 1 https://github.com/IBM/materials.git
+export PYTHONPATH="$PWD/materials/models/pos_egnn:$PYTHONPATH"
+```
 
 ## Development Setup
 

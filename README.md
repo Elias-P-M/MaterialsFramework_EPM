@@ -52,6 +52,14 @@ MaterialsFramework provides a single, uniform API for 20+ ML interatomic potenti
 | SevenNet  | `sevenn`          | [API](docs/api/calculators/sevennet.md)  | [Repo](https://github.com/MDIL-SNU/SevenNet)                       | [Paper](https://arxiv.org/abs/2510.11241)                   |
 | UMA       | `fairchem-core`   | [API](docs/api/calculators/uma.md)       | [Repo](https://github.com/FAIR-Chem/fairchem)                      | N/A                                                         |
 
+Non-MLIP calculators: `RandomCalculator` (dependency-free testing stub) and `VASPCalculator` (external licensed VASP backend).
+
+> **PosEGNN** has no installable package on any public index. To use it, clone the repository and add the module directory to your `PYTHONPATH` manually:
+> ```bash
+> git clone --depth 1 https://github.com/IBM/materials.git
+> export PYTHONPATH="$PWD/materials/models/pos_egnn:$PYTHONPATH"
+> ```
+
 ---
 
 ## Property Analyzers
