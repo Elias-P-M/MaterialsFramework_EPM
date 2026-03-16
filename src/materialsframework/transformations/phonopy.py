@@ -10,10 +10,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
-from phonopy import Phonopy
-from pymatgen.io.phonopy import get_phonopy_structure, get_pmg_structure
 
 if TYPE_CHECKING:
+    from phonopy import Phonopy
     from pymatgen.core import Structure
 
 __author__ = "Doguhan Sariturk"
@@ -63,9 +62,13 @@ class PhonopyDisplacementTransformation:
             The generated displaced structures are stored in the `displaced_structures` attribute, and the
             displacement vectors are stored in `displacements`.
         """
-        supercell_matrix = (
-            np.diag(supercell_matrix) if supercell_matrix else np.diag([2, 2, 2])
-        )
+        try:
+            from phonopy import Phonopy
+            from pymatgen.io.phonopy import get_phonopy_structure
+        except ImportError as e:
+            raise ImportError("phonopy is required. Install it with: pip install materialsframework[phonopy]") from e
+
+        supercell_matrix = np.diag(supercell_matrix) if supercell_matrix else np.diag([2, 2, 2])
 
         phonopy_structure = get_phonopy_structure(structure)
 
@@ -76,14 +79,10 @@ class PhonopyDisplacementTransformation:
             log_level=log_level,
         )
 
-        self.displaced_structures = self._get_displaced_structures(
-            distance=distance, **kwargs
-        )
+        self.displaced_structures = self._get_displaced_structures(distance=distance, **kwargs)
         self.displacements = self.phonon.displacements
 
-    def _get_displaced_structures(
-        self, distance: float = 0.01, **kwargs
-    ) -> list[Structure]:
+    def _get_displaced_structures(self, distance: float = 0.01, **kwargs) -> list[Structure]:
         """Generates displaced structures using Phonopy.
 
         This method generates supercells with atomic displacements for phonon calculations using Phonopy.
@@ -96,11 +95,14 @@ class PhonopyDisplacementTransformation:
         Returns:
             list[Structure]: A list of displaced structures for phonon calculations.
         """
+        try:
+            from pymatgen.io.phonopy import get_pmg_structure
+        except ImportError as e:
+            raise ImportError("phonopy is required. Install it with: pip install materialsframework[phonopy]") from e
+
         self.phonon.generate_displacements(distance=distance, **kwargs)
 
         displaced_supercells = self.phonon.supercells_with_displacements
-        displaced_structures = [
-            get_pmg_structure(cell) for cell in displaced_supercells if cell is not None
-        ]
+        displaced_structures = [get_pmg_structure(cell) for cell in displaced_supercells if cell is not None]
 
         return displaced_structures

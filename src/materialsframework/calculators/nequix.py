@@ -38,7 +38,10 @@ class NequixCalculator(BaseCalculator, BaseMDCalculator):
         self,
         model: str = "nequix-mp-1",
         model_path: str | None = None,
-        capacity_multiplier: float = 1.1,
+        capacity_multiplier: float = 1.1,  # Only for jax backend
+        backend: str = "jax",
+        use_kernel: bool = True,
+        use_compile: bool = False,  # Only for torch backend
         **kwargs,
     ) -> None:
         """Initializes the NequixCalculator with the specified model and calculation settings.
@@ -51,6 +54,9 @@ class NequixCalculator(BaseCalculator, BaseMDCalculator):
             model (str): The Nequix model to use.
             model_path (str, optional): The path to the Nequix model to use. Defaults to None.
             capacity_multiplier (float): The multiplier to use for calculating properties. Defaults to 1.1.
+            backend (str): The backend to use for calculations. Defaults to "jax".
+            use_kernel (bool): Whether to use the kernel for calculations. Defaults to True.
+            use_compile (bool): Whether to use compilation for calculations (only applicable for the torch backend). Defaults to False.
             **kwargs: Additional keyword arguments passed to the `BaseCalculator` and `BaseMDCalculator` constructors.
         """
         basecalculator_kwargs = {key: kwargs.pop(key) for key in BaseCalculator.__init__.__annotations__ if key in kwargs}
@@ -64,6 +70,9 @@ class NequixCalculator(BaseCalculator, BaseMDCalculator):
         self.model = model
         self.model_path = model_path
         self.capacity_multiplier = capacity_multiplier
+        self.backend = backend
+        self.use_kernel = use_kernel
+        self.use_compile = use_compile
 
         self._calculator = None
 
@@ -84,6 +93,9 @@ class NequixCalculator(BaseCalculator, BaseMDCalculator):
             self._calculator = NequixCalculator(
                 model_name=self.model,
                 model_path=self.model_path,
-                model_capacity_multiplier=self.capacity_multiplier,
+                capacity_multiplier=self.capacity_multiplier,
+                backend=self.backend,
+                use_kernel=self.use_kernel,
+                use_compile=self.use_compile,
             )
         return self._calculator

@@ -37,8 +37,8 @@ class SevenNetCalculator(BaseCalculator, BaseMDCalculator):
 
     def __init__(
         self,
-        model: str = "7net-mf-ompa",
-        modal: Literal["mpa", "omat24"] = "mpa",
+        model: str = "7net-omni",
+        modal: str = "mpa",
         file_type: Literal["checkpoint", "torchscript"] = "checkpoint",
         device: Literal["cuda", "cpu", "mps", "auto"] = "auto",
         **kwargs,
@@ -59,16 +59,8 @@ class SevenNetCalculator(BaseCalculator, BaseMDCalculator):
         Note:
             The remaining values for the arguments are set to the default values for the SevenNet potential.
         """
-        basecalculator_kwargs = {
-            key: kwargs.pop(key)
-            for key in BaseCalculator.__init__.__annotations__
-            if key in kwargs
-        }
-        basemd_kwargs = {
-            key: kwargs.pop(key)
-            for key in BaseMDCalculator.__init__.__annotations__
-            if key in kwargs
-        }
+        basecalculator_kwargs = {key: kwargs.pop(key) for key in BaseCalculator.__init__.__annotations__ if key in kwargs}
+        basemd_kwargs = {key: kwargs.pop(key) for key in BaseMDCalculator.__init__.__annotations__ if key in kwargs}
 
         # BaseCalculator and BaseMDCalculator specific attributes
         BaseCalculator.__init__(self, **basecalculator_kwargs)

@@ -59,8 +59,7 @@ class ElasticConstantsAnalyzer:
         max_deform: float = 2,
         fmax: float = 0.01,
         calculator: BaseCalculator | None = None,
-        elastic_constant_transformation: ElasticConstantsDeformationTransformation
-        | None = None,
+        elastic_constant_transformation: ElasticConstantsDeformationTransformation | None = None,
     ) -> None:
         """Initializes the `ElasticConstantsAnalyzer` object.
 
@@ -81,9 +80,7 @@ class ElasticConstantsAnalyzer:
         self._calculator = calculator
         self._elastic_constant_transformation = elastic_constant_transformation
 
-    def calculate(
-        self, structure: Structure | Atoms, is_relaxed: bool = False
-    ) -> dict[str, float]:
+    def calculate(self, structure: Structure | Atoms, is_relaxed: bool = False) -> dict[str, float]:
         """Calculates the elastic constants of a given structure.
 
         The method calculates the elastic constants of a structure using stress-strain data and various
@@ -96,25 +93,24 @@ class ElasticConstantsAnalyzer:
                                          Defaults to False.
 
         Returns:
-            dict[str, float]: A dictionary with the following keys:
-                - C_ij: The elastic constants in GPa.
-                - youngs_modulus: Young's modulus in GPa.
-                - voigt_bulk_modulus: Voigt bulk modulus in GPa.
-                - voigt_shear_modulus: Voigt shear modulus in GPa.
-                - reuss_bulk_modulus: Reuss bulk modulus in GPa.
-                - reuss_shear_modulus: Reuss shear modulus in GPa.
-                - voigt_reuss_hill_bulk_modulus: Voigt-Reuss-Hill bulk modulus in GPa.
-                - voigt_reuss_hill_shear_modulus: Voigt-Reuss-Hill shear modulus in GPa.
-                - poisson_ratio: Poisson's ratio.
-                - pugh_ratio: Pugh's ratio.
+            dict[str, float]: Dictionary with keys:
+                - ``C_ij`` entries: Elastic constants in GPa for all fitted tensor
+                  components.
+                - ``youngs_modulus``: Young's modulus in GPa.
+                - ``voigt_bulk_modulus``: Voigt bulk modulus in GPa.
+                - ``voigt_shear_modulus``: Voigt shear modulus in GPa.
+                - ``reuss_bulk_modulus``: Reuss bulk modulus in GPa.
+                - ``reuss_shear_modulus``: Reuss shear modulus in GPa.
+                - ``voigt_reuss_hill_bulk_modulus``: Voigt-Reuss-Hill bulk modulus in GPa.
+                - ``voigt_reuss_hill_shear_modulus``: Voigt-Reuss-Hill shear modulus in GPa.
+                - ``poisson_ratio``: Poisson ratio.
+                - ``pugh_ratio``: Pugh ratio.
 
         Raises:
             ValueError: If the calculator object does not have the 'energy' property implemented.
         """
         if "energy" not in self.calculator.AVAILABLE_PROPERTIES:
-            raise ValueError(
-                "The calculator object must have the 'energy' property implemented."
-            )
+            raise ValueError("The calculator object must have the 'energy' property implemented.")
 
         if not is_relaxed:
             structure = self.calculator.relax(structure)["final_structure"]
@@ -127,9 +123,7 @@ class ElasticConstantsAnalyzer:
 
         self.elastic_constants_transformation.apply_transformation(structure)
 
-        for (
-            distorted_structure
-        ) in self.elastic_constants_transformation.distorted_structures:
+        for distorted_structure in self.elastic_constants_transformation.distorted_structures:
             distorted_structure.calc = self.calculator.calculator
 
         cij_order = elastic.get_cij_order(structure)
@@ -180,16 +174,12 @@ class ElasticConstantsAnalyzer:
             ElasticConstantsDeformationTransformation: The transformation object used to apply distortions.
         """
         if self._elastic_constant_transformation is None:
-            self._elastic_constant_transformation = (
-                ElasticConstantsDeformationTransformation(
-                    num_deform=self.num_deform, max_deform=self.max_deform
-                )
+            self._elastic_constant_transformation = ElasticConstantsDeformationTransformation(
+                num_deform=self.num_deform, max_deform=self.max_deform
             )
         return self._elastic_constant_transformation
 
-    def _build_elastic_tensor(
-        self, cij: list, cij_order: list, structure: Atoms
-    ) -> ElasticTensor:
+    def _build_elastic_tensor(self, cij: list, cij_order: list, structure: Atoms) -> ElasticTensor:
         """Builds the elastic tensor from the given cij and cij_order.
 
         Args:
@@ -206,12 +196,10 @@ class ElasticConstantsAnalyzer:
             i, j = int(sym[2]) - 1, int(sym[3]) - 1
             elastic_tensor[i, j] = elastic_tensor[j, i] = val
 
-        for block in self.EQUIV.get(
-            sys := elastic.get_lattice_type(structure)[1].lower(), []
-        ):
-            ref = elastic_tensor[block[0]]
+        for block in self.EQUIV.get(sys := elastic.get_lattice_type(structure)[1].lower(), []):
+            mean_val = np.mean([elastic_tensor[p, q] for p, q in block])
             for p, q in block:
-                elastic_tensor[p, q] = elastic_tensor[q, p] = ref
+                elastic_tensor[p, q] = elastic_tensor[q, p] = mean_val
 
         # add the derived C66 if required
         if sys in self.SPECIAL and elastic_tensor[5, 5] == 0:

@@ -4,11 +4,16 @@ It uses a finite difference method to solve the Cahn-Hilliard equation and inclu
 visualizing the results.
 """
 
+from __future__ import annotations
+
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
-from pycalphad import Database, calculate
 from scipy.optimize import curve_fit
+
+if TYPE_CHECKING:
+    from pycalphad import Database
 
 __authors__ = ["Doguhan Sariturk", "Vahid Attari"]
 __maintainer__ = "Doguhan Sariturk"
@@ -77,24 +82,15 @@ class MaterialParameters:
 
         def energy(x, a, b, c, d, e, f, g, h, i, j, k):
             """Polynomial function for fitting."""
-            return (
-                a * x**10
-                + b * x**9
-                + c * x**8
-                + d * x**7
-                + e * x**6
-                + f * x**5
-                + g * x**4
-                + h * x**3
-                + i * x**2
-                + j * x
-                + k
-            )
+            return a * x**10 + b * x**9 + c * x**8 + d * x**7 + e * x**6 + f * x**5 + g * x**4 + h * x**3 + i * x**2 + j * x + k
+
+        try:
+            from pycalphad import Database, calculate
+        except ImportError as e:
+            raise ImportError("pycalphad is required. Install it with: pip install materialsframework[calphad]") from e
 
         if phase is None and len(db.phases) > 1:
-            raise ValueError(
-                "Multiple phases found in the database. Please specify a phase."
-            )
+            raise ValueError("Multiple phases found in the database. Please specify a phase.")
 
         dbf = db if isinstance(db, Database) else Database(db)
         comps = sorted(dbf.elements) if elements is None else elements
@@ -142,9 +138,7 @@ class PhaseFieldModel:
         self.wrt_cycle = wrt_cycle
         self.stop_iter = stop_iter
 
-        self.grid.phi = self.material.composition + 0.02 * np.random.rand(
-            self.grid.nx, self.grid.ny
-        )
+        self.grid.phi = self.material.composition + 0.02 * np.random.rand(self.grid.nx, self.grid.ny)
         self.output_dir = Path("results")
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -160,8 +154,7 @@ class PhaseFieldModel:
         lap = np.zeros_like(field)
 
         lap[1:-1, 1:-1] = (
-            2.0
-            * (field[:-2, 1:-1] + field[2:, 1:-1] + field[1:-1, :-2] + field[1:-1, 2:])
+            2.0 * (field[:-2, 1:-1] + field[2:, 1:-1] + field[1:-1, :-2] + field[1:-1, 2:])
             + field[:-2, :-2]
             + field[:-2, 2:]
             + field[2:, :-2]
@@ -204,7 +197,10 @@ class PhaseFieldModel:
         Args:
             iteration (int): The current iteration number.
         """
-        import matplotlib.pyplot as plt
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError as e:
+            raise ImportError("matplotlib is required for plotting. Install it with: pip install matplotlib") from e
 
         fig, ax = plt.subplots()
         im = ax.imshow(

@@ -44,6 +44,20 @@ __all__ = [*_CALCULATOR_MAP, "get_calculator", "list_calculators"]  # noqa: PLE0
 
 
 def __getattr__(name: str) -> type:
+    """Lazily import and return a calculator class by name.
+
+    Enables attribute-style access to calculators (e.g., ``calculators.M3GNetCalculator``)
+    without eagerly importing all sub-modules at package load time.
+
+    Args:
+        name (str): The calculator class name to look up.
+
+    Returns:
+        type: The requested calculator class.
+
+    Raises:
+        AttributeError: If ``name`` is not found in the calculator registry.
+    """
     if name in _CALCULATOR_MAP:
         module_path, class_name = _CALCULATOR_MAP[name]
         module = importlib.import_module(module_path)

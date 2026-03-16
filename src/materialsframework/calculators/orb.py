@@ -39,9 +39,7 @@ class ORBCalculator(BaseCalculator, BaseMDCalculator):
         self,
         model: str = "orb-v3-conservative-inf-omat",
         device: Literal["cuda", "cpu", "mps"] = "cpu",
-        precision: Literal[
-            "float32-high", "float32-highest", "float64"
-        ] = "float32-high",
+        precision: Literal["float32-high", "float32-highest", "float64"] = "float32-high",
         **kwargs,
     ) -> None:
         """Initializes the ORBCalculator with the specified model and calculation settings.
@@ -51,7 +49,7 @@ class ORBCalculator(BaseCalculator, BaseMDCalculator):
         for the relaxation process can be passed via `basecalculator_kwargs`.
 
         Args:
-            model (str, optional): The name of the ORB model to use. Defaults to "orb-v2".
+            model (str, optional): The name of the ORB model to use. Defaults to "orb-v3-conservative-inf-omat".
             device (Literal["cuda", "cpu", "mps"], optional): The device to use for calculations. Defaults to "cpu".
             precision (Literal["float32-high", "float32-highest", "float64"], optional): The floating point precision to use for the model.
             **kwargs: Additional keyword arguments passed to the `BaseCalculator` and `BaseMDCalculator` constructors.
@@ -59,16 +57,8 @@ class ORBCalculator(BaseCalculator, BaseMDCalculator):
         Examples:
             >>> orb_calculator = ORBCalculator(model="orb-v2", device="cuda")
         """
-        basecalculator_kwargs = {
-            key: kwargs.pop(key)
-            for key in BaseCalculator.__init__.__annotations__
-            if key in kwargs
-        }
-        basemd_kwargs = {
-            key: kwargs.pop(key)
-            for key in BaseMDCalculator.__init__.__annotations__
-            if key in kwargs
-        }
+        basecalculator_kwargs = {key: kwargs.pop(key) for key in BaseCalculator.__init__.__annotations__ if key in kwargs}
+        basemd_kwargs = {key: kwargs.pop(key) for key in BaseMDCalculator.__init__.__annotations__ if key in kwargs}
 
         # BaseCalculator and BaseMDCalculator specific attributes
         BaseCalculator.__init__(self, **basecalculator_kwargs)

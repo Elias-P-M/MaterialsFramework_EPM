@@ -33,14 +33,14 @@ class BainDisplacementTransformation:
     def __init__(
         self,
         start: float = 0.89,
-        stop: float = 1.4,
+        stop: float = 1.5,
         step: float = 0.01,
     ) -> None:
         """Initializes the `BainDisplacementTransformation` object.
 
         Args:
             start (float, optional): The starting displacement value for the c/a ratio. Defaults to 0.89.
-            stop (float, optional): The stopping displacement value for the c/a ratio. Defaults to 1.4.
+            stop (float, optional): The stopping displacement value for the c/a ratio. Defaults to 1.5.
             step (float, optional): The step size for incrementing the c/a ratio. Defaults to 0.01.
         """
         self.c_a_ratios: np.ndarray = np.arange(start=start, stop=stop, step=step)
@@ -64,9 +64,7 @@ class BainDisplacementTransformation:
         """
         for c_a in self.c_a_ratios:
             delta = np.cbrt(1 / c_a) - 1
-            self.displaced_structures[c_a] = self._get_displaced_structures(
-                delta, structure
-            )
+            self.displaced_structures[c_a] = self._get_displaced_structures(delta, structure)
 
     @staticmethod
     def _get_displaced_structures(delta: float, structure: Structure) -> Structure:

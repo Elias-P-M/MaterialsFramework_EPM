@@ -1,8 +1,4 @@
-"""This module provides a class for performing calculations and structure relaxation using the PET-MAD potential.
-
-The `PetMadCalculator` class is designed to calculate properties such as potential energy, forces,
-stresses, and to perform structure relaxation using a specified PET-MAD model.
-"""
+"""This module provides a class for calculations and relaxations with PET-MAD models via UPET."""
 
 from __future__ import annotations
 
@@ -19,58 +15,53 @@ __email__ = "dogu.sariturk@gmail.com"
 
 
 class PetMadCalculator(BaseCalculator, BaseMDCalculator):
-    """A calculator class for performing material property calculations and structure relaxation using the PET-MAD potential.
+    """A calculator class for material property calculations using PET-MAD models served by UPET.
 
     The `PetMadCalculator` class supports the calculation of properties such as potential energy,
-    forces, and stresses. It also allows for the relaxation of structures using a specified PET-MAD model.
+    forces, and stresses. It also allows for the relaxation of structures.
 
     Attributes:
         AVAILABLE_PROPERTIES (list[str]): A list of properties that this calculator can compute,
                                           including "energy", "forces", and "stresses".
 
     References:
-        - PET-MAD: https://doi.org/10.48550/arXiv.2503.14118
+        - UPET: https://github.com/lab-cosmo/upet
     """
 
     AVAILABLE_PROPERTIES = ["energy", "forces", "stress"]
 
     def __init__(
         self,
-        model: str = "1.0.1",
+        model: str = "pet-mad-s",
+        version: str = "latest",
         checkpoint_path: str | None = None,
         device: Literal["cuda", "cpu", "mps"] = "cpu",
         **kwargs,
     ) -> None:
         """Initializes the PetMadCalculator with the specified model and calculation settings.
 
-        This method sets up the calculator with a predefined PET-MAD model, which will be used
-        to calculate properties and perform structure relaxation. Additional parameters
-        for the relaxation process can be passed via `basecalculator_kwargs`.
+        This method sets up the calculator with a PET-MAD model family entry served by UPET.
+        Additional parameters for the relaxation process can be passed via
+        `basecalculator_kwargs`.
 
         Args:
-            model (str): The version of the PET-MAD model to use. Default is "1.0.1".
+            model (str): PET-MLIP model to use. Default is "pet-mad-s". Ignored if `checkpoint_path` is provided.
+            version (str): Version of the model to use. Default is "latest". Ignored if `checkpoint_path` is provided.
             checkpoint_path (str, optional): Path to the model checkpoint file. If not provided,
                                                 the model will be downloaded using the "version" parameter.
             device (str): The device to use for calculations. Options are "cuda", "cpu", or "mps".
             **kwargs: Additional keyword arguments passed to the `BaseCalculator` and `BaseMDCalculator` constructors.
         """
-        basecalculator_kwargs = {
-            key: kwargs.pop(key)
-            for key in BaseCalculator.__init__.__annotations__
-            if key in kwargs
-        }
-        basemd_kwargs = {
-            key: kwargs.pop(key)
-            for key in BaseMDCalculator.__init__.__annotations__
-            if key in kwargs
-        }
+        basecalculator_kwargs = {key: kwargs.pop(key) for key in BaseCalculator.__init__.__annotations__ if key in kwargs}
+        basemd_kwargs = {key: kwargs.pop(key) for key in BaseMDCalculator.__init__.__annotations__ if key in kwargs}
 
         # BaseCalculator and BaseMDCalculator specific attributes
         BaseCalculator.__init__(self, **basecalculator_kwargs)
         BaseMDCalculator.__init__(self, **basemd_kwargs)
 
-        # PET-MAD specific attributes
+        # PET-MAD via UPET specific attributes
         self.model = model
+        self.version = version
         self.checkpoint_path = checkpoint_path
         self.device = device
 
@@ -80,18 +71,19 @@ class PetMadCalculator(BaseCalculator, BaseMDCalculator):
     def calculator(self) -> Calculator:
         """Creates and returns the ASE Calculator object associated with this calculator instance.
 
-        This property initializes the Calculator object using the PET-MAD potential and other settings
+        This property initializes the Calculator object using UPET and PET-MAD model settings
         specified during the initialization of this calculator. The Calculator object is then returned
         to the caller. If the Calculator object has already been created, it is returned directly.
 
         Returns:
-            Calculator: The ASE Calculator object configured with the PET-MAD potential.
+            Calculator: The ASE Calculator object configured via UPET.
         """
         if self._calculator is None:
-            from pet_mad.calculator import PETMADCalculator
+            from upet.calculator import UPETCalculator
 
-            self._calculator = PETMADCalculator(
-                version=self.model,
+            self._calculator = UPETCalculator(
+                model=self.model,
+                version=self.version,
                 checkpoint_path=self.checkpoint_path,
                 device=self.device,
             )

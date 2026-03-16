@@ -10,10 +10,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
-from phono3py import Phono3py
-from pymatgen.io.phonopy import get_phonopy_structure, get_pmg_structure
 
 if TYPE_CHECKING:
+    from phono3py import Phono3py
     from pymatgen.core import Structure
 
 __author__ = "Doguhan Sariturk"
@@ -72,14 +71,14 @@ class Phono3pyDisplacementTransformation:
             The generated displaced supercells are stored in `phonon_supercells_with_displacements` (for phonon calculations)
             and `supercells_with_displacements` (for third-order force constants).
         """
-        supercell_matrix = (
-            np.diag(supercell_matrix) if supercell_matrix else np.diag([2, 2, 2])
-        )
-        phonon_supercell_matrix = (
-            np.diag(phonon_supercell_matrix)
-            if phonon_supercell_matrix
-            else np.diag([3, 3, 3])
-        )
+        try:
+            from phono3py import Phono3py
+            from pymatgen.io.phonopy import get_phonopy_structure
+        except ImportError as e:
+            raise ImportError("phono3py is required. Install it with: pip install materialsframework[phono3py]") from e
+
+        supercell_matrix = np.diag(supercell_matrix) if supercell_matrix else np.diag([2, 2, 2])
+        phonon_supercell_matrix = np.diag(phonon_supercell_matrix) if phonon_supercell_matrix else np.diag([3, 3, 3])
 
         phonopy_structure = get_phonopy_structure(structure)
 
@@ -120,24 +119,19 @@ class Phono3pyDisplacementTransformation:
             tuple[list[Structure], list[Structure]]: Two lists of displaced structures for phonon (second-order)
                                                                and third-order force constant calculations.
         """
-        self.phonon.generate_displacements(
-            distance=distance, is_plusminus=is_plusminus, is_diagonal=is_diagonal
-        )
+        try:
+            from pymatgen.io.phonopy import get_pmg_structure
+        except ImportError as e:
+            raise ImportError("phono3py is required. Install it with: pip install materialsframework[phono3py]") from e
+
+        self.phonon.generate_displacements(distance=distance, is_plusminus=is_plusminus, is_diagonal=is_diagonal)
 
         displaced_supercells = self.phonon.supercells_with_displacements
-        displaced_structures = [
-            get_pmg_structure(cell) for cell in displaced_supercells if cell is not None
-        ]
+        displaced_structures = [get_pmg_structure(cell) for cell in displaced_supercells if cell is not None]
 
-        self.phonon.generate_fc2_displacements(
-            distance=distance, is_plusminus=is_plusminus, is_diagonal=is_diagonal
-        )
+        self.phonon.generate_fc2_displacements(distance=distance, is_plusminus=is_plusminus, is_diagonal=is_diagonal)
 
         displaced_phonon_supercells = self.phonon.phonon_supercells_with_displacements
-        displaced_phonon_structures = [
-            get_pmg_structure(cell)
-            for cell in displaced_phonon_supercells
-            if cell is not None
-        ]
+        displaced_phonon_structures = [get_pmg_structure(cell) for cell in displaced_phonon_supercells if cell is not None]
 
         return displaced_phonon_structures, displaced_structures

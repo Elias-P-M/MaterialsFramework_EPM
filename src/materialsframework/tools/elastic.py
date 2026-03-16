@@ -133,6 +133,7 @@ def orthorombic(u: Sequence[float]) -> ndarray:
 
 def trigonal(u: Sequence[float]) -> ndarray:
     """Construct the equation matrix for the trigonal lattice based on L&L using auxiliary coordinates.
+
     The order of constants is: C_{11}, C_{33}, C_{12}, C_{13}, C_{44}, C_{14}.
 
     Args:
@@ -292,9 +293,7 @@ def get_cij_order(cryst: Atoms) -> tuple[str, ...]:
     return orders[get_lattice_type(cryst)[0]]
 
 
-def get_lattice_type(
-    structure: Atoms, length_tol: float = 1e-4, angle_tol: float = 1.0
-) -> tuple[int, str, None, None]:
+def get_lattice_type(structure: Atoms, length_tol: float = 1e-4, angle_tol: float = 1.0) -> tuple[int, str, None, None]:
     """Classify the lattice type and Bravais lattice name of a crystal structure based on its unit cell parameters.
 
     This function has been modified to determine the lattice type solely from
@@ -324,28 +323,35 @@ def get_lattice_type(
     """
 
     def approx_equal(x, y, tol):
+        """Return True if the absolute difference between x and y is less than tol."""
         return abs(x - y) < tol
 
     a, b, c = structure.cell.lengths()
     alpha, beta, gamma = structure.cell.angles()
 
     if (
-        approx_equal(alpha, 90, angle_tol)
+        approx_equal(a, b, length_tol)
+        and approx_equal(alpha, 90, angle_tol)
         and approx_equal(beta, 90, angle_tol)
-        and approx_equal(gamma, 90, angle_tol)
+        and approx_equal(gamma, 120, angle_tol)
     ):
+        return 6, "Hexagonal", None, None
+
+    if approx_equal(alpha, 90, angle_tol) and approx_equal(beta, 90, angle_tol) and approx_equal(gamma, 90, angle_tol):
         if approx_equal(a, b, length_tol) and approx_equal(b, c, length_tol):
             return 7, "Cubic", None, None
         elif approx_equal(a, b, length_tol):
             return 4, "Tetragonal", None, None
-        elif approx_equal(gamma, 120, angle_tol):
-            return 6, "Hexagonal", None, None
         else:
             return 3, "Orthorombic", None, None
-    elif approx_equal(alpha, beta, angle_tol) and approx_equal(beta, gamma, angle_tol):
+
+    if approx_equal(alpha, beta, angle_tol) and approx_equal(beta, gamma, angle_tol):
         return 5, "Trigonal", None, None
-    else:
-        return 1, "Triclinic", None, None
+
+    if approx_equal(alpha, 90, angle_tol) and approx_equal(gamma, 90, angle_tol):
+        return 2, "Monoclinic", None, None
+
+    return 1, "Triclinic", None, None
 
 
 def get_pressure(s: ndarray) -> float:
@@ -397,9 +403,7 @@ def get_elementary_deformations(cryst: Atoms, n: int = 5, d: float = 2) -> list[
     return systems
 
 
-def get_elastic_tensor(
-    cryst: Atoms, systems: list[Atoms]
-) -> tuple[ndarray, tuple[ndarray, ...]]:
+def get_elastic_tensor(cryst: Atoms, systems: list[Atoms]) -> tuple[ndarray, tuple[ndarray, ...]]:
     """Calculate the elastic tensor of the crystal using stress-strain fitting.
 
     The elastic tensor is derived from the stress-strain relation
@@ -454,9 +458,7 @@ def get_elastic_tensor(
         cij = bij[0] - array([-p, -p, -p, p, p, p, -p, -p, -p, p, p, p, p])
     elif symm == triclinic:
         # TODO: verify this pressure array
-        cij = bij[0] - array(
-            [-p, -p, -p, p, p, p, -p, -p, -p, p, p, p, p, p, p, p, p, p]
-        )
+        cij = bij[0] - array([-p, -p, -p, p, p, p, -p, -p, -p, p, p, p, p, p, p, p, p, p])
     return cij, bij
 
 

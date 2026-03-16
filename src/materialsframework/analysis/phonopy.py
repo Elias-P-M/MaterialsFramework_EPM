@@ -96,18 +96,16 @@ class PhonopyAnalyzer:
             log_level (int, optional): The log level for the phonon calculations. Defaults to 0.
 
         Returns:
-            dict[str, dict]: A dictionary with the following keys:
-                - "total_dos": A dictionary containing the total density of states.
-                - "thermal_properties": A dictionary containing the thermal properties.
-                - "projected_dos": A dictionary containing the projected density of states.
+            dict[str, dict]: Dictionary with keys:
+                - ``total_dos``: Total phonon density of states payload.
+                - ``thermal_properties``: Thermal-properties payload.
+                - ``projected_dos``: Projected phonon density of states payload.
 
         Raises:
             ValueError: If the calculator object does not have the 'forces' property implemented.
         """
         if "forces" not in self.calculator.AVAILABLE_PROPERTIES:
-            raise ValueError(
-                "The calculator object must have the 'forces' property implemented."
-            )
+            raise ValueError("The calculator object must have the 'forces' property implemented.")
 
         if isinstance(structure, Atoms):
             structure = self.ase_adaptor.get_structure(structure)
@@ -131,9 +129,7 @@ class PhonopyAnalyzer:
         self.phonon.run_mesh(mesh=mesh)
 
         # DOS
-        self.phonon.run_total_dos(
-            sigma=sigma, freq_min=freq_min, freq_max=freq_max, freq_pitch=freq_pitch
-        )
+        self.phonon.run_total_dos(sigma=sigma, freq_min=freq_min, freq_max=freq_max, freq_pitch=freq_pitch)
         total_dos = self.phonon.get_total_dos_dict()
 
         # Thermal Properties
@@ -141,9 +137,7 @@ class PhonopyAnalyzer:
         thermal_properties = self.phonon.get_thermal_properties_dict()
 
         # PDOS
-        self.phonon.run_mesh(
-            mesh=pdos_mesh, is_mesh_symmetry=False, with_eigenvectors=True
-        )
+        self.phonon.run_mesh(mesh=pdos_mesh, is_mesh_symmetry=False, with_eigenvectors=True)
         self.phonon.run_projected_dos()
         projected_dos = self.phonon.get_projected_dos_dict()
 
@@ -188,9 +182,7 @@ class PhonopyAnalyzer:
         the force constants required for phonon calculations.
         """
         if self.phonon is None:
-            raise RuntimeError(
-                "phonopy_transformation has to be called before trying to produce force constants."
-            )
+            raise RuntimeError("phonopy_transformation has to be called before trying to produce force constants.")
 
         forces = [
             self.calculator.calculate(displaced_structure)["forces"]

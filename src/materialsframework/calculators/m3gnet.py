@@ -12,8 +12,8 @@ from materialsframework.tools.calculator import BaseCalculator
 from materialsframework.tools.md import BaseMDCalculator
 
 if TYPE_CHECKING:
-    import torch
     from ase.calculators.calculator import Calculator
+    from torch import Tensor
 
 __author__ = "Doguhan Sariturk"
 __email__ = "dogu.sariturk@gmail.com"
@@ -38,10 +38,11 @@ class M3GNetCalculator(BaseCalculator, BaseMDCalculator):
     def __init__(
         self,
         model: str = "M3GNet-MP-2021.2.8-PES",
-        state_attr: torch.Tensor | None = None,
+        state_attr: Tensor | None = None,
+        stress_unit: Literal["eV/A3", "GPa"] = "GPa",
         stress_weight: float = 1.0,
-        device: Literal["cpu", "cuda", "mps"] = "cpu",
-        n_cores: int | None = None,
+        use_voigt: bool = False,
+        use_warp: bool = False,
         **kwargs,
     ) -> None:
         """Initializes the M3GNetCalculator with the specified model and calculation settings.
@@ -54,11 +55,11 @@ class M3GNetCalculator(BaseCalculator, BaseMDCalculator):
             model (str, optional): The M3GNet model to use. Defaults to "M3GNet-MP-2021.2.8-PES".
             state_attr (Tensor | None, optional): State attributes to include in the potential energy calculation.
                                                   This allows for additional model customization. Defaults to None.
+            stress_unit (Literal["eV/A3", "GPa"], optional): The unit for stress calculations. If set to "GPa", stress will be calculated in GPa.
             stress_weight (float, optional): Conversion factor from GPa to eV/ang^3. If set to 1.0, stress is calculated in GPa.
                                              Defaults to 1.0.
-            device (Literal["cpu", "cuda", "mps"], optional): The device to use for calculations. Defaults to "cpu".
-            n_cores (int | None, optional): The number of OMP threads to use. If None, the number of threads is set automatically.
-                                            Defaults to None.
+            use_voigt (bool, optional): Whether to use Voigt notation for stress. Defaults to False.
+            use_warp (bool, optional): Whether to use WARP for neighbor list construction. Defaults to False.
             **kwargs: Additional keyword arguments passed to the `BaseCalculator` and `BaseMDCalculator` constructors.
 
         Examples:
@@ -77,10 +78,33 @@ class M3GNetCalculator(BaseCalculator, BaseMDCalculator):
         # M3GNet specific attributes
         self.model = model
         self.state_attr = state_attr
+        self.stress_unit = stress_unit
         self.stress_weight = stress_weight
-        self.device = device
-        self.n_cores = n_cores
+        self.use_voigt = use_voigt
+        self.use_warp = use_warp
+
         self._calculator = None
+        self._potential = None
+
+    @property
+    def potential(self):
+        """Loads and returns the M3GNet potential associated with this calculator instance.
+
+        This property lazily loads the M3GNet model specified during initialization if it
+        has not already been loaded. The loaded potential is then used for all subsequent
+        calculations.
+
+        Returns:
+            CHGNet: The loaded M3GNet model instance used for calculations.
+        """
+        if self._potential is None:
+            import matgl
+
+            self._potential = matgl.load_model(
+                path=self.model,
+                cache_location=self.cache_location,
+            )
+        return self._potential
 
     @property
     def calculator(self) -> Calculator:
@@ -94,18 +118,14 @@ class M3GNetCalculator(BaseCalculator, BaseMDCalculator):
             Calculator: The ASE Calculator object configured with the M3GNet potential.
         """
         if self._calculator is None:
-            import dgl
-            import torch
-            from matgl import load_model
             from matgl.ext.ase import PESCalculator
 
-            if self.n_cores is not None:
-                dgl.utils.set_num_threads(self.n_cores)
-            torch.set_default_device(torch.device(self.device))
-
             self._calculator = PESCalculator(
-                potential=load_model(self.model),
+                potential=self.potential,
                 state_attr=self.state_attr,
+                stress_unit=self.stress_unit,
                 stress_weight=self.stress_weight,
+                use_voigt=self.use_voigt,
+                use_warp=self.use_warp,
             )
         return self._calculator

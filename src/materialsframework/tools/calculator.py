@@ -139,17 +139,11 @@ class BaseCalculator(ABC):
             include_dipoles (bool, optional): If True, includes dipoles in the trajectory. Defaults to False.
         """
         if not hasattr(self.__class__, "AVAILABLE_PROPERTIES"):
-            raise TypeError(
-                f"Class {self.__class__.__name__} must define AVAILABLE_PROPERTIES"
-            )
+            raise TypeError(f"Class {self.__class__.__name__} must define AVAILABLE_PROPERTIES")
 
         self.fmax = fmax
         self.steps = steps
-        self.optimizer: Optimizer = (
-            OPTIMIZERS[optimizer.lower()].value
-            if isinstance(optimizer, str)
-            else optimizer
-        )
+        self.optimizer: Optimizer = OPTIMIZERS[optimizer.lower()].value if isinstance(optimizer, str) else optimizer
         self.relax_cell = relax_cell
         self.fix_symmetry = fix_symmetry
         self.fix_atoms = fix_atoms
@@ -167,6 +161,7 @@ class BaseCalculator(ABC):
         self.include_dipoles = include_dipoles
 
     @property
+    @abstractmethod
     def calculator(self) -> Calculator:
         """Returns the ASE Calculator object associated with this relaxer.
 
@@ -201,14 +196,14 @@ class BaseCalculator(ABC):
             **kwargs: Additional keyword arguments to pass to the optimizer during relaxation.
 
         Returns:
-            dict: A dictionary containing the final relaxed structure, the trajectory of the relaxation process,
-            and any computed properties listed in `AVAILABLE_PROPERTIES`.
-
-            Keys in the dictionary:
-                - "final_structure" (Structure): The final relaxed structure.
-                - "trajectory" (TrajectoryObserver): The recorded trajectory of the relaxation process.
-                - Other keys corresponding to properties in `AVAILABLE_PROPERTIES`, each containing the respective value
-                  from the calculator's results.
+            dict[str, Any]: Dictionary with keys:
+                - ``final_structure``: Final relaxed structure as a pymatgen
+                  ``Structure``.
+                - ``trajectory``: ``TrajectoryObserver`` containing intermediate
+                  relaxation states.
+                - Property keys from ``AVAILABLE_PROPERTIES`` (for example
+                  ``energy``, ``forces``, ``stress``) populated from the calculator
+                  results.
 
         Raises:
             ValueError: If the structure cannot be relaxed.
@@ -221,6 +216,7 @@ class BaseCalculator(ABC):
         if isinstance(atoms, (Structure, Molecule)):
             atoms = self.ase_adaptor.get_atoms(atoms)
 
+        self._reset_calculator_results()
         atoms.calc = self.calculator
 
         if self.fix_symmetry:
@@ -258,12 +254,7 @@ class BaseCalculator(ABC):
             "trajectory": obs,
         }
 
-        out_dict.update(
-            {
-                prop: self.calculator.results.get(prop, None)
-                for prop in self.__class__.AVAILABLE_PROPERTIES
-            }
-        )
+        out_dict.update({prop: self.calculator.results.get(prop, None) for prop in self.__class__.AVAILABLE_PROPERTIES})
 
         return out_dict
 
@@ -281,18 +272,18 @@ class BaseCalculator(ABC):
                 a Pymatgen `Structure` object, or a Pymatgen `Molecule` object.
 
         Returns:
-            dict: A dictionary containing the calculated structure and properties.
-
-            Keys in the dictionary:
-                - "final_structure" (Structure): The input structure as an ASE `Structure` object.
-                - Other keys corresponding to properties in `AVAILABLE_PROPERTIES`, each containing the respective value
-                  from the calculator's results.
+            dict[str, Any]: Dictionary with keys:
+                - ``final_structure``: Input structure as a pymatgen ``Structure``.
+                - Property keys from ``AVAILABLE_PROPERTIES`` (for example
+                  ``energy``, ``forces``, ``stress``) populated from the calculator
+                  results.
         """
         atoms = structure.copy()
 
         if isinstance(atoms, (Structure, Molecule)):
             atoms = self.ase_adaptor.get_atoms(atoms)
 
+        self._reset_calculator_results()
         atoms.calc = self.calculator
         self.calculator.calculate(
             atoms=atoms,
@@ -311,11 +302,18 @@ class BaseCalculator(ABC):
             "final_structure": self.ase_adaptor.get_structure(atoms),
         }
 
-        out_dict.update(
-            {
-                prop: self.calculator.results[prop]
-                for prop in self.__class__.AVAILABLE_PROPERTIES
-            }
-        )
+        out_dict.update({prop: self.calculator.results[prop] for prop in self.__class__.AVAILABLE_PROPERTIES})
 
         return out_dict
+
+    def _reset_calculator_results(self) -> None:
+        """Clear cached calculator outputs before a new evaluation.
+
+        Some ASE calculators cache result arrays keyed to the previous number of atoms.
+        Clearing the cache avoids shape mismatches when the next structure has a different
+        site count, such as interstitial defect structures.
+        """
+        calculator = self.calculator
+        results = getattr(calculator, "results", None)
+        if isinstance(results, dict):
+            results.clear()

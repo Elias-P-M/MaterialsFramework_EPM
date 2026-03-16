@@ -1,6 +1,6 @@
 """This module contains classes for generating Special Quasirandom Structures (SQS).
 
-The `SqsgenTransformation` class allows users to generate SQS structures, which are designed
+The `SqsGenerator` class allows users to generate SQS structures, which are designed
 to mimic the statistical properties of a random alloy, using the method implemented in the `sqsgenerator`.
 SQS structures are important in simulating disordered systems or alloys, as they approximate randomness
 while maintaining computational tractability.
@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 from pymatgen.core import Composition, Lattice
-from sqsgenerator import sqs_optimize
 
 if TYPE_CHECKING:
     from pymatgen.core import Structure
@@ -23,10 +22,10 @@ __author__ = "Doguhan Sariturk"
 __email__ = "dogu.sariturk@gmail.com"
 
 
-class SqsgenTransformation:
+class SqsGenerator:
     """A class used to generate Special Quasirandom Structures (SQS).
 
-    The `SqsgenTransformation` class provides methods to generate SQS structures using the SQS method,
+    The `SqsGenerator` class provides methods to generate SQS structures using the SQS method,
     which produces structures that approximate a random arrangement of atoms while matching specific
     pair and multi-site correlation functions. These structures are widely used in simulations of
     disordered systems and alloys.
@@ -40,7 +39,7 @@ class SqsgenTransformation:
         structure_format: str = "pymatgen",
         log_level: Literal["trace", "debug", "info", "warning", "error"] = "warning",
     ) -> None:
-        """Initializes the `SqsgenTransformation` object.
+        """Initializes the `SqsGenerator` object.
 
         Args:
             iterations (int, optional): The number of iterations for the SQS generation. Defaults to 1000.
@@ -64,8 +63,8 @@ class SqsgenTransformation:
         self._sqs: Structure | None = None
         self._objective: float | None = None
 
-        self.results: dict[int, dict[str, Any]] | None = None
-        self.timings: dict[int, float | list[float]] | None = None
+        self.results: Any | None = None
+        self.timings: None = None
 
     def generate(
         self,
@@ -83,9 +82,9 @@ class SqsgenTransformation:
             shell_weights (dict[int, float], optional): The weights for the coordination shells. Defaults to {1: 1.0, 2: 0.5}.
 
         Returns:
-            dict[str, Any]: A dictionary with the following keys:
-                - "structure" (Any): The generated SQS structure.
-                - "objective" (float): The final objective value from the SQS optimization.
+            dict[str, Any]: Dictionary with keys:
+                - ``structure``: Generated SQS structure.
+                - ``objective``: Final objective value from SQS optimization.
 
         Raises:
             ValueError: If the crystal structure is invalid.
@@ -94,45 +93,46 @@ class SqsgenTransformation:
             composition = Composition(composition)
 
         self._supercell_size = supercell_size
-        self._lattice = self._get_lattice(
-            composition=composition, crystal_structure=crystal_structure.lower()
-        )
+        self._lattice = self._get_lattice(composition=composition, crystal_structure=crystal_structure.lower())
         self._coords = self._get_coords(crystal_structure=crystal_structure.lower())
-        self._multiplier = self._get_multiplier(
-            crystal_structure=crystal_structure.lower()
-        )
-        self._composition = self._determine_composition(
-            supercell_size=self._supercell_size, composition=composition
-        )
+        self._multiplier = self._get_multiplier(crystal_structure=crystal_structure.lower())
+        self._composition = self._determine_composition(supercell_size=self._supercell_size, composition=composition)
 
-        shell_weights = (
-            {1: 1.0, 2: 0.5}
-            if shell_weights is None
-            else {1: 1.0}
-            if supercell_size == (1, 1, 1)
-            else shell_weights
-        )
+        if shell_weights is None:
+            shell_weights = {1: 1.0} if supercell_size == (1, 1, 1) else {1: 1.0, 2: 0.5}
 
         configuration = {
             "structure": {
                 "lattice": self._lattice.matrix,
                 "coords": self._coords,
-                "species": ["W"]
-                * self._multiplier,  # Tungsten used here as a placeholder element
+                "species": ["W"] * self._multiplier,  # Tungsten used here as a placeholder element
                 "supercell": self._supercell_size,
             },
             "iterations": self._iterations,
             "shell_weights": shell_weights,
             "composition": self._composition,
-            "mode": self._mode,
+            "iteration_mode": self._mode,
         }
 
-        self.results, self.timings = sqs_optimize(
-            settings=configuration,
-            make_structures=self._make_structures,
-            structure_format=self._structure_format,
-            log_level=self._log_level,
+        try:
+            from sqsgenerator import optimize, parse_config
+            from sqsgenerator.core import LogLevel
+        except ImportError as e:
+            raise ImportError("sqsgenerator is required. Install it with: pip install materialsframework[sqsgen]") from e
+
+        _log_level_map = {
+            "trace": LogLevel.trace,
+            "debug": LogLevel.debug,
+            "info": LogLevel.info,
+            "warning": LogLevel.warn,
+            "error": LogLevel.error,
+        }
+
+        self.results = optimize(
+            parse_config(configuration),
+            level=_log_level_map.get(self._log_level, LogLevel.warn),
         )
+        self.timings = None
 
         self._sqs = self._parse_results_for_structure()
         self._objective = self._parse_results_for_objective()
@@ -152,13 +152,7 @@ class SqsgenTransformation:
         Returns:
             Lattice: The calculated lattice.
         """
-
-        avg_radius = np.sum(
-            [
-                el.atomic_radius * amt
-                for (el, amt) in composition.fractional_composition.items()
-            ]
-        )
+        avg_radius = np.sum([el.atomic_radius * amt for (el, amt) in composition.fractional_composition.items()])
 
         lattice_creators = {
             "hcp": lambda: Lattice.hexagonal(
@@ -180,9 +174,7 @@ class SqsgenTransformation:
             "sc": lambda: Lattice.cubic(a=avg_radius),
         }
 
-        return lattice_creators.get(
-            crystal_structure, lambda: ValueError("Invalid crystal structure.")
-        )()
+        return lattice_creators.get(crystal_structure, lambda: ValueError("Invalid crystal structure."))()
 
     @staticmethod
     def _get_coords(crystal_structure) -> dict[str, list[float]]:
@@ -215,9 +207,7 @@ class SqsgenTransformation:
             "sc": [[0.0, 0.0, 0.0]],
         }
 
-        return coords_creators.get(
-            crystal_structure, ValueError("Invalid crystal structure.")
-        )
+        return coords_creators.get(crystal_structure, ValueError("Invalid crystal structure."))
 
     @staticmethod
     def _get_multiplier(crystal_structure) -> int:
@@ -242,13 +232,9 @@ class SqsgenTransformation:
             "sc": 1,
         }
 
-        return multiplier_creators.get(
-            crystal_structure, ValueError("Invalid crystal structure.")
-        )
+        return multiplier_creators.get(crystal_structure, ValueError("Invalid crystal structure."))
 
-    def _determine_composition(
-        self, supercell_size: tuple[int, int, int], composition: Composition
-    ) -> dict[str, int]:
+    def _determine_composition(self, supercell_size: tuple[int, int, int], composition: Composition) -> dict[str, int]:
         """Determines the composition of the supercell.
 
         Args:
@@ -261,10 +247,7 @@ class SqsgenTransformation:
         """
         result = self._multiplier * reduce(operator.mul, supercell_size)
 
-        return {
-            el: int(round(amt, 5) * result)
-            for el, amt in composition.fractional_composition.to_reduced_dict.items()
-        }
+        return {el: int(round(amt, 5) * result) for el, amt in composition.fractional_composition.as_reduced_dict().items()}
 
     def _parse_results_for_structure(self) -> Structure:
         """Parses the results dictionary from the generate function.
@@ -275,7 +258,9 @@ class SqsgenTransformation:
         Returns:
             Structure: The SQS structure generated by the calculator.
         """
-        return next(iter(self.results.values()))["structure"].sort()
+        from sqsgenerator import to_pymatgen
+
+        return to_pymatgen(self.results.best().structure()).get_sorted_structure()
 
     def _parse_results_for_objective(self) -> float:
         """Parses the results dictionary from the generate function.
@@ -286,7 +271,7 @@ class SqsgenTransformation:
         Returns:
             float: The objective value of the SQS structure.
         """
-        return next(iter(self.results.values()))["objective"]
+        return self.results.best().objective
 
     @property
     def sqs(self) -> Structure:

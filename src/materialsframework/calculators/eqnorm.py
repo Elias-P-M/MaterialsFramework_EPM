@@ -34,10 +34,10 @@ class EqnormCalculator(BaseCalculator, BaseMDCalculator):
 
     def __init__(
         self,
-        model: Literal["eqnorm-mptrj", "eqnorm-pro-mptrj"] = "eqnorm-mptrj",
+        model: Literal["eqnorm-mptrj", "eqnorm-omat", "eqnorm-max-mptrj"] = "eqnorm-mptrj",
         model_name: str = "eqnorm",
-        train_progress: str = "1.0",
         device: str = "cpu",
+        compile_model: bool = False,
         **kwargs,
     ) -> None:
         """Initializes the EqnormCalculator with the specified model and calculation settings.
@@ -47,22 +47,14 @@ class EqnormCalculator(BaseCalculator, BaseMDCalculator):
         for the relaxation process can be passed via `basecalculator_kwargs`.
 
         Args:
-            model (Literal["eqnorm-mptrj", "eqnorm-pro-mptrj"]): The Eqnorm model variant. Defaults to "eqnorm-mptrj".
+            model (Literal["eqnorm-mptrj", "eqnorm-omat", "eqnorm-max-mptrj"]): The Eqnorm model variant. Defaults to "eqnorm-mptrj".
             model_name (str): The name of the Eqnorm model to use for calculations.
-            train_progress (str, optional): The training progress version of the model. Defaults to "1.0".
-            device (Literal["cuda", "cpu"], optional): The device to use for calculations. Defaults to "cpu".
+            device (str, optional): The device to use for calculations. Defaults to "cpu".
+            compile_model (bool, optional): Whether to compile the model with torch.compile. Defaults to False.
             **kwargs: Additional keyword arguments passed to the `BaseCalculator` and `BaseMDCalculator` constructors.
         """
-        basecalculator_kwargs = {
-            key: kwargs.pop(key)
-            for key in BaseCalculator.__init__.__annotations__
-            if key in kwargs
-        }
-        basemd_kwargs = {
-            key: kwargs.pop(key)
-            for key in BaseMDCalculator.__init__.__annotations__
-            if key in kwargs
-        }
+        basecalculator_kwargs = {key: kwargs.pop(key) for key in BaseCalculator.__init__.__annotations__ if key in kwargs}
+        basemd_kwargs = {key: kwargs.pop(key) for key in BaseMDCalculator.__init__.__annotations__ if key in kwargs}
 
         # BaseCalculator and BaseMDCalculator specific attributes
         BaseCalculator.__init__(self, **basecalculator_kwargs)
@@ -71,8 +63,8 @@ class EqnormCalculator(BaseCalculator, BaseMDCalculator):
         # Eqnorm specific attributes
         self.model = model
         self.model_name = model_name
-        self.train_progress = train_progress
         self.device = device
+        self.compile = compile_model
 
         self._calculator = None
 
@@ -93,7 +85,7 @@ class EqnormCalculator(BaseCalculator, BaseMDCalculator):
             self._calculator = EqnormCalculator(
                 model_variant=self.model,
                 model_name=self.model_name,
-                train_progress=self.train_progress,
                 device=self.device,
+                compile=self.compile,
             )
         return self._calculator

@@ -36,11 +36,9 @@ class eSENCalculator(BaseCalculator, BaseMDCalculator):
 
     def __init__(
         self,
-        model: str = "eSEN-30M-OAM",
+        model: str = "esen-sm-conserving-all-omol",
         checkpoint_path: str | None = None,
-        local_cache: str = "~/.cache/esen/",
         device: Literal["cpu", "cuda"] = "cpu",
-        seed: int | None = None,
         **kwargs,
     ) -> None:
         """Initializes the eSENCalculator with the specified model and calculation settings.
@@ -50,23 +48,17 @@ class eSENCalculator(BaseCalculator, BaseMDCalculator):
         for the relaxation process can be passed via `basecalculator_kwargs`.
 
         Args:
-            model (str): The name of the eSEN model to use for calculations. Defaults to 'eSEN-30M-OAM'.
-            checkpoint_path (str, optional): The path to the checkpoint file for the eSEN model.
-            local_cache (str): The path to the local cache directory for the eSEN model. Defaults to "~/.cache/esen/".
-            device (Literal["cpu", "cuda"], optional): The device to use for the calculations. Defaults to "cpu".
-            seed (int, optional): The seed value for the model.
+            model (str): The name of the eSEN model to use for calculations. Must be one of the
+                models available in fairchem-core (e.g. ``esen-sm-conserving-all-omol``,
+                ``esen-md-direct-all-omol``, ``esen-sm-conserving-all-oc25``). Ignored if
+                ``checkpoint_path`` is provided. Defaults to ``"esen-sm-conserving-all-omol"``.
+            checkpoint_path (str, optional): Path to a local eSEN checkpoint file. When provided,
+                the model registry name is ignored.
+            device (Literal["cpu", "cuda"]): The device to use for the calculations. Defaults to "cpu".
             **kwargs: Additional keyword arguments passed to the `BaseCalculator` and `BaseMDCalculator` constructors.
         """
-        basecalculator_kwargs = {
-            key: kwargs.pop(key)
-            for key in BaseCalculator.__init__.__annotations__
-            if key in kwargs
-        }
-        basemd_kwargs = {
-            key: kwargs.pop(key)
-            for key in BaseMDCalculator.__init__.__annotations__
-            if key in kwargs
-        }
+        basecalculator_kwargs = {key: kwargs.pop(key) for key in BaseCalculator.__init__.__annotations__ if key in kwargs}
+        basemd_kwargs = {key: kwargs.pop(key) for key in BaseMDCalculator.__init__.__annotations__ if key in kwargs}
 
         # BaseCalculator and BaseMDCalculator specific attributes
         BaseCalculator.__init__(self, **basecalculator_kwargs)
@@ -75,9 +67,7 @@ class eSENCalculator(BaseCalculator, BaseMDCalculator):
         # eSEN specific attributes
         self.model = model
         self.checkpoint_path = checkpoint_path
-        self.local_cache = local_cache
         self.device = device
-        self.seed = seed
 
         self._calculator = None
 
@@ -85,21 +75,16 @@ class eSENCalculator(BaseCalculator, BaseMDCalculator):
     def calculator(self) -> Calculator:
         """Creates and returns the ASE Calculator object associated with this calculator instance.
 
-        This property initializes the Calculator object using the eSEN potential and other settings
-        specified during the initialization of this calculator. The Calculator object is then returned
-        to the caller. If the Calculator object has already been created, it is returned directly.
-
         Returns:
             Calculator: The ASE Calculator object configured with the eSEN potential.
         """
         if self._calculator is None:
-            from fairchem.core import OCPCalculator
+            from fairchem.core import FAIRChemCalculator, pretrained_mlip
+            from fairchem.core.units.mlip_unit import load_predict_unit
 
-            self._calculator = OCPCalculator(
-                model_name=self.model,
-                checkpoint_path=self.checkpoint_path,
-                local_cache=self.local_cache,
-                cpu=self.device != "cuda",
-                seed=self.seed,
-            )
+            if self.checkpoint_path is not None:
+                predictor = load_predict_unit(path=self.checkpoint_path, device=self.device)
+            else:
+                predictor = pretrained_mlip.get_predict_unit(model_name=self.model, device=self.device)
+            self._calculator = FAIRChemCalculator(predict_unit=predictor)
         return self._calculator

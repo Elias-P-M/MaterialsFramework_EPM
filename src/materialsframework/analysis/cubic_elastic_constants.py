@@ -46,8 +46,7 @@ class CubicElasticConstantsAnalyzer:
         delta_max: float = 0.05,
         step_size: float = 0.01,
         calculator: BaseCalculator | None = None,
-        cubic_transformation: CubicElasticConstantsDeformationTransformation
-        | None = None,
+        cubic_transformation: CubicElasticConstantsDeformationTransformation | None = None,
     ) -> None:
         """Initializes the `CubicElasticConstantsAnalyzer` object.
 
@@ -70,9 +69,7 @@ class CubicElasticConstantsAnalyzer:
         self._calculator = calculator
         self._cubic_transformation = cubic_transformation
 
-    def calculate(
-        self, structure: Structure | Atoms, is_relaxed: bool = False
-    ) -> dict[str, float]:
+    def calculate(self, structure: Structure | Atoms, is_relaxed: bool = False) -> dict[str, float]:
         """Calculates the cubic elastic constants for a given structure.
 
         This method applies cubic distortions to the input structure and computes the potential energies
@@ -84,27 +81,25 @@ class CubicElasticConstantsAnalyzer:
             is_relaxed (bool, optional): Whether the structure is already relaxed. Defaults to False.
 
         Returns:
-            dict[str, float]: A dictionary with the following keys:
-                - "C11": The C11 elastic constant in GPa.
-                - "C12": The C12 elastic constant in GPa.
-                - "C44": The C44 elastic constant in GPa.
-                - "young_modulus": The Young's modulus in GPa.
-                - "voigt_bulk_modulus": The Voigt bulk modulus in GPa.
-                - "voigt_shear_modulus": The Voigt shear modulus in GPa.
-                - "reuss_bulk_modulus": The Reuss bulk modulus in GPa.
-                - "reuss_shear_modulus": The Reuss shear modulus in GPa.
-                - "voigt_reuss_hill_bulk_modulus": The Voigt-Reuss-Hill bulk modulus in GPa.
-                - "voigt_reuss_hill_shear_modulus": The Voigt-Reuss-Hill shear modulus in GPa.
-                - "poisson_ratio": The Poisson's ratio.
-                - "pugh_ratio": The Pugh's ratio (G_VRH / K_VRH).
+            dict[str, float]: Dictionary with keys:
+                - ``C11``: Elastic constant C11 in GPa.
+                - ``C12``: Elastic constant C12 in GPa.
+                - ``C44``: Elastic constant C44 in GPa.
+                - ``youngs_modulus``: Young's modulus in GPa.
+                - ``voigt_bulk_modulus``: Voigt bulk modulus in GPa.
+                - ``voigt_shear_modulus``: Voigt shear modulus in GPa.
+                - ``reuss_bulk_modulus``: Reuss bulk modulus in GPa.
+                - ``reuss_shear_modulus``: Reuss shear modulus in GPa.
+                - ``voigt_reuss_hill_bulk_modulus``: Voigt-Reuss-Hill bulk modulus in GPa.
+                - ``voigt_reuss_hill_shear_modulus``: Voigt-Reuss-Hill shear modulus in GPa.
+                - ``poisson_ratio``: Poisson ratio.
+                - ``pugh_ratio``: Pugh ratio (G_VRH / K_VRH).
 
         Raises:
             ValueError: If the calculator object does not have the 'energy' property implemented.
         """
         if "energy" not in self.calculator.AVAILABLE_PROPERTIES:
-            raise ValueError(
-                "The calculator object must have the 'energy' property implemented."
-            )
+            raise ValueError("The calculator object must have the 'energy' property implemented.")
 
         if isinstance(structure, Atoms):
             structure = self.ase_adaptor.get_structure(structure)
@@ -260,9 +255,7 @@ class CubicElasticConstantsAnalyzer:
         return EV_A3_TO_GPA * (self._fit_poly(deltas, energies) / (2 * initial_volume))
 
     @staticmethod
-    def _build_cubic_elastic_tensor(
-        c11: float, c12: float, c44: float
-    ) -> ElasticTensor:
+    def _build_cubic_elastic_tensor(c11: float, c12: float, c44: float) -> ElasticTensor:
         """Builds the 6x6 cubic elastic tensor from the given elastic constants.
 
         Args:

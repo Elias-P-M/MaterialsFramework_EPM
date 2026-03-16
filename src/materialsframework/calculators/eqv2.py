@@ -45,28 +45,16 @@ class EqV2Calculator(BaseCalculator, BaseMDCalculator):
     ) -> None:
         """Initializes the EqV2Calculator with the specified model and calculation settings.
 
-        This method sets up the calculator with a predefined EqV2 model, which will be used
-        to calculate properties and perform structure relaxation. Additional parameters
-        for the relaxation process can be passed via `basecalculator_kwargs`.
-
         Args:
             model (str): The name of the EqV2 model to use for calculations. Defaults to 'EquiformerV2-153M-OMAT24-MP-sAlex'.
             checkpoint_path (str, optional): The path to the checkpoint file for the EqV2 model.
             local_cache (str): The path to the local cache directory for the EqV2 model. Defaults to "~/.cache/eqv2/".
-            device (Literal["cpu", "cuda"], optional): The device to use for the calculations. Defaults to "cpu".
+            device (Literal["cpu", "cuda"]): The device to use for the calculations. Defaults to "cpu".
             seed (int, optional): The seed value for the model.
             **kwargs: Additional keyword arguments passed to the `BaseCalculator` and `BaseMDCalculator` constructors.
         """
-        basecalculator_kwargs = {
-            key: kwargs.pop(key)
-            for key in BaseCalculator.__init__.__annotations__
-            if key in kwargs
-        }
-        basemd_kwargs = {
-            key: kwargs.pop(key)
-            for key in BaseMDCalculator.__init__.__annotations__
-            if key in kwargs
-        }
+        basecalculator_kwargs = {key: kwargs.pop(key) for key in BaseCalculator.__init__.__annotations__ if key in kwargs}
+        basemd_kwargs = {key: kwargs.pop(key) for key in BaseMDCalculator.__init__.__annotations__ if key in kwargs}
 
         # BaseCalculator and BaseMDCalculator specific attributes
         BaseCalculator.__init__(self, **basecalculator_kwargs)
@@ -84,10 +72,6 @@ class EqV2Calculator(BaseCalculator, BaseMDCalculator):
     @property
     def calculator(self) -> Calculator:
         """Creates and returns the ASE Calculator object associated with this calculator instance.
-
-        This property initializes the Calculator object using the EqV2 potential and other settings
-        specified during the initialization of this calculator. The Calculator object is then returned
-        to the caller. If the Calculator object has already been created, it is returned directly.
 
         Returns:
             Calculator: The ASE Calculator object configured with the EqV2 potential.

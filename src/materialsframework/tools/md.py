@@ -8,7 +8,7 @@ and symmetry constraints.
 
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
@@ -129,6 +129,7 @@ class BaseMDCalculator(ABC):
         self.results = None
 
     @property
+    @abstractmethod
     def calculator(self) -> Calculator:
         """Returns the ASE Calculator object associated with this instance.
 
@@ -222,9 +223,7 @@ class BaseMDCalculator(ABC):
             mask=self.mask,
         )
 
-    def run(
-        self, structure: Atoms | Structure | Molecule, steps: int
-    ) -> dict[str, Any]:
+    def run(self, structure: Atoms | Structure | Molecule, steps: int) -> dict[str, Any]:
         """Executes the Molecular Dynamics (MD) simulation using the specified calculator.
 
         This method performs the simulation based on the provided structure and
@@ -235,14 +234,17 @@ class BaseMDCalculator(ABC):
             steps (int): The number of MD steps to perform.
 
         Returns:
-            dict[str, list]: A dictionary containing the results of the MD simulation, including
-                             total energy, potential energy, kinetic energy, forces, stresses, and temperature.
+            dict[str, Any]: Dictionary with keys:
+                - ``total_energy``: Total energies at each recorded MD step (eV).
+                - ``potential_energy``: Potential energies at each recorded MD step (eV).
+                - ``kinetic_energy``: Kinetic energies at each recorded MD step (eV).
+                - ``forces``: Force arrays at each recorded MD step (eV/Å).
+                - ``stresses``: Stress tensors at each recorded MD step.
+                - ``temperature``: Temperatures at each recorded MD step (K).
+                - ``velocities``: Velocity arrays at each recorded MD step.
+                - ``final_structure``: Final structure as a pymatgen ``Structure``.
         """
-        ase_atoms = (
-            self.ase_adaptor.get_atoms(structure)
-            if isinstance(structure, (Structure, Molecule))
-            else structure.copy()
-        )
+        ase_atoms = self.ase_adaptor.get_atoms(structure) if isinstance(structure, (Structure, Molecule)) else structure.copy()
 
         MaxwellBoltzmannDistribution(ase_atoms, temperature_K=self.temperature)
 
@@ -270,9 +272,7 @@ class BaseMDCalculator(ABC):
         if self.logfile:
             self._initialize_logger(ase_atoms)
 
-        self.trajectory = TrajectoryObserver(
-            ase_atoms, include_temperature=True, include_velocities=True
-        )
+        self.trajectory = TrajectoryObserver(ase_atoms, include_temperature=True, include_velocities=True)
         self.dyn.attach(self.trajectory, interval=self.interval)
 
         self.dyn.run(steps)

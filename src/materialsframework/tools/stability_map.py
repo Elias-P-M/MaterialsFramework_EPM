@@ -9,16 +9,18 @@ and compositions in a multi-component system.
 It can help identify regions of stability and phase separation in the system.
 """
 
+from __future__ import annotations
+
 import itertools
+import os
 import warnings
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-import psutil
-from pandarallel import pandarallel
-from pycalphad import Database, Workspace
-from pycalphad import variables as v
-from pycalphad.property_framework import IsolatedPhase
+
+if TYPE_CHECKING:
+    from pycalphad import Database
 
 warnings.filterwarnings("ignore")
 
@@ -146,8 +148,10 @@ class StabilityMap:
 
         Args:
             db (str): Path to the thermodynamic database file.
-            elements (list | None): List of elements to include in the stability map. If not provided, all elements in the database will be used.
-            phase (str | None): The phase to include in the stability map. If not provided, the phase in the database will be used.
+            elements (list | None): List of elements to include in the stability map.
+                If not provided, all elements in the database will be used.
+            phase (str | None): The phase to include in the stability map.
+                If not provided, the phase in the database will be used.
             step (float): Step size for generating compositions. Default is 0.05, i.e., 5%.
             temperature (float): Temperature in Kelvin. Default is 1500 K.
             pressure (float): Pressure in Pascals. Default is 101325 Pa.
@@ -157,18 +161,22 @@ class StabilityMap:
         Raises:
             ValueError: If multiple phases are found in the database and phase is not specified.
         """
+        try:
+            from pandarallel import pandarallel
+            from pycalphad import Database
+        except ImportError as e:
+            raise ImportError(
+                "pycalphad and pandarallel are required. Install them with: pip install materialsframework[calphad]"
+            ) from e
+
         pandarallel.initialize(
-            nb_workers=nb_workers
-            if nb_workers is not None
-            else psutil.cpu_count(logical=False),
+            nb_workers=nb_workers if nb_workers is not None else os.cpu_count(),
             progress_bar=progress_bar,
         )
         self.dbf = db if isinstance(db, Database) else Database(db)
 
         if phase is None and len(self.dbf.phases.keys()) > 1:
-            raise ValueError(
-                f"Multiple phases found in the database. Please specify one of {list(self.dbf.phases.keys())}."
-            )
+            raise ValueError(f"Multiple phases found in the database. Please specify one of {list(self.dbf.phases.keys())}.")
 
         self.elements = sorted(self.dbf.elements) if elements is None else elements
         self.phase = list(db.phases.keys())[0] if phase is None else phase
@@ -186,14 +194,10 @@ class StabilityMap:
             self.compositions.parallel_apply(self._process_row, axis=1).tolist(),
             index=self.compositions.index,
         )
-        eigenvalues.columns = [
-            f"eigenvalue_{i + 1}" for i in range(eigenvalues.shape[1])
-        ]
+        eigenvalues.columns = [f"eigenvalue_{i + 1}" for i in range(eigenvalues.shape[1])]
         self.compositions = pd.concat([self.compositions, eigenvalues], axis=1)
         self.compositions.dropna(inplace=True)
-        self.compositions["negative_eigenvalues"] = self.compositions.apply(
-            self._determine_section, axis=1
-        )
+        self.compositions["negative_eigenvalues"] = self.compositions.apply(self._determine_section, axis=1)
 
     @staticmethod
     def _generate_compositions(elements: list, step: float = 0.05):
@@ -213,8 +217,7 @@ class StabilityMap:
         valid_compositions = [
             composition
             for composition in itertools.product(possible_values, repeat=len(elements))
-            if np.isclose(sum(composition), 1.0)
-            and not any(val == 1.0 for val in composition)
+            if np.isclose(sum(composition), 1.0) and not any(val == 1.0 for val in composition)
         ]
 
         return pd.DataFrame(valid_compositions, columns=elements)
@@ -229,9 +232,7 @@ class StabilityMap:
         Returns:
             int: Number of negative eigenvalues.
         """
-        negative_eigenvalues = sum(
-            1 for col in row.index if col.startswith("eigenvalue") and row[col] < 0
-        )
+        negative_eigenvalues = sum(1 for col in row.index if col.startswith("eigenvalue") and row[col] < 0)
         return negative_eigenvalues
 
     def _process_row(self, df_row: pd.Series) -> list:
@@ -247,6 +248,13 @@ class StabilityMap:
             ValueError: If the calculation fails.
         """
         try:
+            try:
+                from pycalphad import Workspace
+                from pycalphad import variables as v
+                from pycalphad.property_framework import IsolatedPhase
+            except ImportError as e:
+                raise ImportError("pycalphad is required. Install it with: pip install materialsframework[calphad]") from e
+
             wks = Workspace(
                 database=self.dbf,
                 components=self.elements,
@@ -258,37 +266,20 @@ class StabilityMap:
                 },
             )
 
-            # Calculate first derivatives of chemical potentials
             dmu_dx = {
-                comp: [
-                    wks.get(
-                        IsolatedPhase(self.phase, wks=wks)(f"MU({comp}).X({indep})")
-                    )
-                    for indep in self.elements[:-1]
-                ]
+                comp: [wks.get(IsolatedPhase(self.phase, wks=wks)(f"MU({comp}).X({indep})")) for indep in self.elements[:-1]]
                 for comp in self.elements
             }
 
-            # Calculate second derivatives of Gibbs energy
             hessian = np.array(
                 [
-                    [
-                        dmu_dx[comp][i] - dmu_dx[self.elements[-1]][i]
-                        for comp in self.elements[:-1]
-                    ]
+                    [dmu_dx[comp][i] - dmu_dx[self.elements[-1]][i] for comp in self.elements[:-1]]
                     for i in range(len(self.elements) - 1)
                 ]
             )
 
-            # Transform Hessian to orthogonal space and perform eigenanalysis
-            orthogonalization_matrix = self.ORTHOGONALIZATION[
-                : len(self.elements) - 1, : len(self.elements) - 1
-            ]
-            eigen_values = np.sort(
-                np.linalg.eig(
-                    orthogonalization_matrix.T @ hessian @ orthogonalization_matrix
-                )[0]
-            )
+            orthogonalization_matrix = self.ORTHOGONALIZATION[: len(self.elements) - 1, : len(self.elements) - 1]
+            eigen_values = np.sort(np.linalg.eig(orthogonalization_matrix.T @ hessian @ orthogonalization_matrix)[0])
 
             return eigen_values
 
@@ -309,21 +300,20 @@ class StabilityMap:
             ValueError: If the number of elements is not 4.
             KeyError: If the 'negative_eigenvalues' column is missing.
         """
-        import matplotlib.pyplot as plt
-        from matplotlib.ticker import MaxNLocator
+        try:
+            import matplotlib.pyplot as plt
+            from matplotlib.ticker import MaxNLocator
+        except ImportError as e:
+            raise ImportError("matplotlib is required for plotting. Install it with: pip install matplotlib") from e
 
         required_elements = 4
         if len(self.elements) != required_elements:
             raise ValueError("The number of elements must be exactly 4 for plotting.")
 
         if "negative_eigenvalues" not in self.compositions.columns:
-            raise KeyError(
-                "The 'negative_eigenvalues' column is missing. Please run the fit() method first."
-            )
+            raise KeyError("The 'negative_eigenvalues' column is missing. Please run the fit() method first.")
 
-        def _generate_regular_pentagon(
-            radius: float = 0.5, center: tuple = (0, 0), rotation_angle: float = 0
-        ) -> np.ndarray:
+        def _generate_regular_pentagon(radius: float = 0.5, center: tuple = (0, 0), rotation_angle: float = 0) -> np.ndarray:
             """Generate vertices of a regular pentagon and rotate it by a given angle.
 
             Args:
@@ -335,10 +325,8 @@ class StabilityMap:
                 np.ndarray: Vertices of the pentagon.
             """
             n = 4
-            # Adjust the starting angle by π/5 to make one side flat on the horizontal
             angles = np.linspace(np.pi / 5, 2 * np.pi + np.pi / 5, n, endpoint=False)
 
-            # Rotate the pentagon by the given rotation_angle
             angles += rotation_angle
 
             vertices = np.array(
@@ -354,9 +342,7 @@ class StabilityMap:
 
         comps2 = np.dot(
             self.compositions[self.elements],
-            _generate_regular_pentagon(
-                radius=1, center=(0, 0), rotation_angle=np.pi / 0.952
-            ),
+            _generate_regular_pentagon(radius=1, center=(0, 0), rotation_angle=np.pi / 0.952),
         )
 
         self.compositions["proj0"], self.compositions["proj1"] = (
@@ -389,9 +375,7 @@ class StabilityMap:
             ("left", "center"),
         ]
 
-        for (x, y), (ha, va), element in zip(
-            positions, alignments, self.elements, strict=False
-        ):
+        for (x, y), (ha, va), element in zip(positions, alignments, self.elements, strict=False):
             ax.text(
                 x,
                 y,

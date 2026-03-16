@@ -38,7 +38,7 @@ class NequIPCalculator(BaseCalculator, BaseMDCalculator):
         self,
         model: str = "",
         device: Literal["cpu", "cuda"] = "cpu",
-        chemical_symbols: list[str] | dict[str, str] | None = None,
+        chemical_species_to_atom_type_map: dict[str, str] | bool | None = True,
         **kwargs,
     ) -> None:
         """Initializes the NequIPCalculator with the specified model and calculation settings.
@@ -50,7 +50,7 @@ class NequIPCalculator(BaseCalculator, BaseMDCalculator):
         Args:
             model (str): The NequIP model to use.
             device (Literal["cuda", "cpu"]): The device to use for calculations. Defaults to "cpu".
-            chemical_symbols (list[str] | dict[str, str] | None): List or mapping of chemical symbols for the system.
+            chemical_species_to_atom_type_map (Optional[Union[Dict[str, str], bool]], optional): A mapping from chemical species to atom types expected by the NequIP model. Defaults to True, which means that the mapping will be automatically inferred from the model.
             **kwargs: Additional keyword arguments passed to the `BaseCalculator` and `BaseMDCalculator` constructors.
         """
         basecalculator_kwargs = {key: kwargs.pop(key) for key in BaseCalculator.__init__.__annotations__ if key in kwargs}
@@ -63,7 +63,7 @@ class NequIPCalculator(BaseCalculator, BaseMDCalculator):
         # NequIP specific attributes
         self.model = model
         self.device = device
-        self.chemical_symbols = chemical_symbols
+        self.chemical_species_to_atom_type_map = chemical_species_to_atom_type_map
 
         self._calculator = None
 
@@ -79,10 +79,12 @@ class NequIPCalculator(BaseCalculator, BaseMDCalculator):
             Calculator: The ASE Calculator object configured with the NequIP potential.
         """
         if self._calculator is None:
-            from nequip.ase import NequIPCalculator
+            from nequip.integrations.ase import NequIPCalculator
 
             self._calculator = NequIPCalculator.from_compiled_model(
-                compile_path=self.model, device=self.device, chemical_symbols=self.chemical_symbols
+                compile_path=self.model,
+                device=self.device,
+                chemical_species_to_atom_type_map=self.chemical_species_to_atom_type_map,
             )
 
         return self._calculator

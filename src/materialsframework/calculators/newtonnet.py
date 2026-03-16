@@ -32,7 +32,7 @@ class NewtonNetCalculator(BaseCalculator, BaseMDCalculator):
         - NewtonNet: https://doi.org/10.1039/D2DD00008C
     """
 
-    AVAILABLE_PROPERTIES = ["energy", "free_energy", "forces", "hessian", "stress"]
+    AVAILABLE_PROPERTIES = ["bec", "charges", "energy", "free_energy", "forces", "hessian", "stress"]
 
     def __init__(
         self,
@@ -55,16 +55,8 @@ class NewtonNetCalculator(BaseCalculator, BaseMDCalculator):
             precision (Literal["float64", "float32", "float16"]): Floating-point precision of the calculations. Defaults to "float32".
             **kwargs: Additional keyword arguments passed to the `BaseCalculator` and `BaseMDCalculator` constructors.
         """
-        basecalculator_kwargs = {
-            key: kwargs.pop(key)
-            for key in BaseCalculator.__init__.__annotations__
-            if key in kwargs
-        }
-        basemd_kwargs = {
-            key: kwargs.pop(key)
-            for key in BaseMDCalculator.__init__.__annotations__
-            if key in kwargs
-        }
+        basecalculator_kwargs = {key: kwargs.pop(key) for key in BaseCalculator.__init__.__annotations__ if key in kwargs}
+        basemd_kwargs = {key: kwargs.pop(key) for key in BaseMDCalculator.__init__.__annotations__ if key in kwargs}
 
         # BaseCalculator and BaseMDCalculator specific attributes
         BaseCalculator.__init__(self, **basecalculator_kwargs)

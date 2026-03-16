@@ -50,48 +50,48 @@ class FormationEnergyAnalyzer:
         self._calculator = calculator
         self._formation_energy_transformation = formation_energy_transformation
 
-    def calculate(
-        self, structure: Atoms | Structure, is_relaxed: bool = False
-    ) -> dict[str, float]:
+    def calculate(self, structure: Atoms | Structure, is_relaxed: bool = False) -> dict[str, float]:
         """Calculates the formation energy of the given structure.
+
+        For elemental references, three candidate crystal structures (FCC, BCC, HCP) are
+        relaxed with the same calculator for each element and the lowest energy per atom
+        is used.
 
         Args:
             structure (Atoms | Structure): The structure for which the formation energy is calculated.
-            is_relaxed (bool, optional): If True, the structure is relaxed before calculation. Defaults to False.
+            is_relaxed (bool, optional): If ``True``, the structure is assumed to be already relaxed
+                and only a single-point energy calculation is performed. Defaults to ``False``.
 
         Returns:
-            dict[str, float]: A dictionary containing the formation energy of the structure.
+            dict[str, float]: Dictionary with keys:
+                - ``formation_energy``: Formation energy per atom (eV/atom).
         """
         if "energy" not in self.calculator.AVAILABLE_PROPERTIES:
-            raise ValueError(
-                "The calculator object must have the 'energy' property implemented."
-            )
+            raise ValueError("The calculator object must have the 'energy' property implemented.")
 
         if isinstance(structure, Atoms):
             structure = self.ase_adaptor.get_structure(structure)
 
         min_elements = 2
         if len(structure.elements) < min_elements:
-            raise ValueError(
-                "The structure must contain at least two different elements to calculate formation energy."
-            )
+            raise ValueError("The structure must contain at least two different elements to calculate formation energy.")
 
-        if not is_relaxed:
-            structure = self.calculator.relax(structure)["final_structure"]
-
-        initial_structure = structure.copy()
-        initial_energy = self.calculator.calculate(initial_structure)["energy"]
+        if is_relaxed:
+            compound_energy = self.calculator.calculate(structure)["energy"]
+        else:
+            result = self.calculator.relax(structure)
+            compound_energy = result["energy"]
+            structure = result["final_structure"]
 
         self.formation_energy_transformation.apply_transformation(structure)
+
         pure_energies = sum(
-            num
-            * (self.calculator.relax(pure_structure)["energy"] / len(pure_structure))
-            for pure_structure, num in self.formation_energy_transformation.pure_structures
+            num * min(self.calculator.relax(candidate)["energy"] / candidate.num_sites for candidate in candidates)
+            for candidates, num in self.formation_energy_transformation.pure_structures
         )
 
         return {
-            "formation_energy": (initial_energy - pure_energies)
-            / len(initial_structure),
+            "formation_energy": (compound_energy - pure_energies) / structure.num_sites,
         }
 
     @property
@@ -113,7 +113,8 @@ class FormationEnergyAnalyzer:
     def formation_energy_transformation(self) -> FormationEnergyTransformation:
         """Returns the transformation object used to apply distortions.
 
-        If the transformation object is not already initialized, this method creates a new `FormationEnergyTransformation` instance.
+        If the transformation object is not already initialized, this method creates a new
+        `FormationEnergyTransformation` instance.
 
         Returns:
             FormationEnergyTransformation: The transformation object used to generate structures.

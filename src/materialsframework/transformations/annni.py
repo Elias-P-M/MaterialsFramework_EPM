@@ -1,6 +1,4 @@
-"""
-This module provides a class to generate structures
-for stacking fault energy calculations using the ANNNI method.
+"""This module provides a class to generate structures for stacking fault energy calculations using the ANNNI method.
 
 The `ANNNIStackingFaultTransformation` class facilitates the generation of crystal structures
 displaced for generalized stacking fault calculations using the ANNNI model.
@@ -14,9 +12,7 @@ from typing import TYPE_CHECKING
 
 from pymatgen.core import Composition
 
-from materialsframework.transformations.special_quasirandom_structures import (
-    SqsgenTransformation,
-)
+from materialsframework.tools.sqsgen import SqsGenerator
 
 if TYPE_CHECKING:
     from pymatgen.core import Structure
@@ -33,14 +29,14 @@ class ANNNIStackingFaultTransformation:
     supports customization of supercell sizes and shell weights to allow users to control the structure generation process.
     """
 
-    def __init__(self, sqs_transformation: SqsgenTransformation | None = None) -> None:
+    def __init__(self, sqs_gen: SqsGenerator | None = None) -> None:
         """Initializes the `ANNNIStackingFaultTransformation` object.
 
         Args:
-            sqs_transformation (SqsgenTransformation | None): An optional SQS transformation object. If not provided,
+            sqs_gen (SqsGenerator | None): An optional SQS generator object. If not provided,
                                                                   a new instance will be created when needed.
         """
-        self._sqs_transformation = sqs_transformation
+        self._sqs_gen = sqs_gen
 
         self.structures: dict[str, Structure] = {}
 
@@ -71,11 +67,9 @@ class ANNNIStackingFaultTransformation:
         Note:
             The generated structures are stored in the `structures` dictionary under the keys "fcc", "hcp", and "dhcp".
         """
-        composition = (
-            Composition(composition) if isinstance(composition, str) else composition
-        )
+        composition = Composition(composition) if isinstance(composition, str) else composition
 
-        fcc = self.sqs_transformation.generate(
+        fcc = self.sqs_gen.generate(
             composition=composition,
             crystal_structure="fcc_prim",
             supercell_size=fcc_supercell_size,
@@ -83,7 +77,7 @@ class ANNNIStackingFaultTransformation:
         )
         self.structures["fcc"] = fcc["structure"]
 
-        hcp = self.sqs_transformation.generate(
+        hcp = self.sqs_gen.generate(
             composition=composition,
             crystal_structure="hcp",
             supercell_size=hcp_supercell_size,
@@ -91,7 +85,7 @@ class ANNNIStackingFaultTransformation:
         )
         self.structures["hcp"] = hcp["structure"]
 
-        dhcp = self._sqs_transformation.generate(
+        dhcp = self._sqs_gen.generate(
             composition=composition,
             crystal_structure="dhcp",
             supercell_size=dhcp_supercell_size,
@@ -100,15 +94,15 @@ class ANNNIStackingFaultTransformation:
         self.structures["dhcp"] = dhcp["structure"]
 
     @property
-    def sqs_transformation(self) -> SqsgenTransformation:
-        """The SqsgenTransformation object used to generate SQS structures.
+    def sqs_gen(self) -> SqsGenerator:
+        """The SqsGenerator object used to generate SQS structures.
 
-        If the `sqs_transformation` instance is not already created, this property initializes a new
-        `SqsgenTransformation` instance and returns it. Otherwise, it returns the existing instance.
+        If the `sqs_gen` instance is not already created, this property initializes a new
+        `SqsGenerator` instance and returns it. Otherwise, it returns the existing instance.
 
         Returns:
-            SqsgenTransformation: The SqsgenTransformation instance.
+            SqsGenerator: The SqsGenerator instance.
         """
-        if self._sqs_transformation is None:
-            self._sqs_transformation = SqsgenTransformation()
-        return self._sqs_transformation
+        if self._sqs_gen is None:
+            self._sqs_gen = SqsGenerator()
+        return self._sqs_gen

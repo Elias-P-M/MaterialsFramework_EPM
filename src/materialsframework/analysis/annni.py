@@ -1,6 +1,4 @@
-"""
-This module provides a class to perform the second-order ANNNI formulae on a composition
-to calculate intrinsic and extrinsic stacking fault energies.
+"""This module provides a class to perform the second-order ANNNI formulae on a composition to calculate intrinsic and extrinsic stacking fault energies.
 
 The `ANNNIStackingFaultAnalyzer` class calculates stacking fault energies, which are essential
 for understanding the stability of certain crystal structures, using the second-order ANNNI (Axial
@@ -63,39 +61,32 @@ class ANNNIStackingFaultAnalyzer:
                                                    or as a string.
 
         Returns:
-            dict[str, float]: A dictionary with the following keys:
-                - "isfe": The intrinsic stacking fault energy (ISFE) in eV/Å².
-                - "esfe": The extrinsic stacking fault energy (ESFE) in eV/Å².
+            dict[str, float]: Dictionary with keys:
+                - ``isfe``: Intrinsic stacking fault energy (eV/Å²).
+                - ``esfe``: Extrinsic stacking fault energy (eV/Å²).
 
         Raises:
             ValueError: If the calculator object does not have the 'energy' property implemented.
         """
         if "energy" not in self.calculator.AVAILABLE_PROPERTIES:
-            raise ValueError(
-                "The calculator object must have the 'energy' property implemented."
-            )
+            raise ValueError("The calculator object must have the 'energy' property implemented.")
 
         self.annni_transformation.apply_transformation(composition=composition)
 
         fcc_struct = self.annni_transformation.structures["fcc"]
         fcc_result = self.calculator.relax(fcc_struct)
         fcc_energy = fcc_result["energy"] / fcc_result["final_structure"].num_sites
-        fcc_volume = fcc_result["final_structure"].volume
-        a_fcc = (
-            np.sqrt(3)
-            / 4
-            * (fcc_result["final_structure"].lattice.matrix[0][1] * 2) ** 2
-        )
+        fcc_vol_per_atom = fcc_result["final_structure"].volume / fcc_result["final_structure"].num_sites
+        a_conv = (4 * fcc_vol_per_atom) ** (1 / 3)
+        a_fcc = np.sqrt(3) / 4 * a_conv**2
 
-        hcp_struct = self.annni_transformation.structures["hcp"].scale_lattice(
-            fcc_volume
-        )
+        hcp_struct = self.annni_transformation.structures["hcp"]
+        hcp_struct = hcp_struct.scale_lattice(fcc_vol_per_atom * hcp_struct.num_sites)
         hcp_result = self.calculator.calculate(hcp_struct)
         hcp_energy = hcp_result["energy"] / hcp_struct.num_sites
 
-        dhcp_struct = self.annni_transformation.structures["dhcp"].scale_lattice(
-            fcc_volume
-        )
+        dhcp_struct = self.annni_transformation.structures["dhcp"]
+        dhcp_struct = dhcp_struct.scale_lattice(fcc_vol_per_atom * dhcp_struct.num_sites)
         dhcp_result = self.calculator.calculate(dhcp_struct)
         dhcp_energy = dhcp_result["energy"] / dhcp_struct.num_sites
 

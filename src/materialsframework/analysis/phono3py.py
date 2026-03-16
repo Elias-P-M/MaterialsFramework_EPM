@@ -101,16 +101,14 @@ class Phono3pyAnalyzer:
             log_level (Literal[0, 1, 2], optional): The log level for Phono3py. Defaults to 0.
 
         Returns:
-            dict[str, ConductivityRTA | ConductivityLBTE]: A dictionary with the following key:
-                - "thermal_conductivity": The calculated thermal conductivity object (RTA or LBTE).
+            dict[str, ConductivityRTA | ConductivityLBTE]: Dictionary with key:
+                - ``thermal_conductivity``: Thermal conductivity object (RTA or LBTE).
 
         Raises:
             ValueError: If the calculator object does not have the 'forces' property implemented.
         """
         if "forces" not in self.calculator.AVAILABLE_PROPERTIES:
-            raise ValueError(
-                "The calculator object must have the 'forces' property implemented."
-            )
+            raise ValueError("The calculator object must have the 'forces' property implemented.")
 
         if isinstance(structure, Atoms):
             structure = self.ase_adaptor.get_structure(structure)
@@ -142,11 +140,9 @@ class Phono3pyAnalyzer:
             is_isotope=is_isotope,
             conductivity_type=conductivity_type,
             boundary_mfp=boundary_mfp,
-            temperatures=range(t_min, t_max + 1, t_step),
+            temperatures=np.arange(t_min, t_max + t_step, t_step),
         )
-        self.thermal_conductivity: ConductivityRTA | ConductivityLBTE = (
-            self.phonon.thermal_conductivity
-        )
+        self.thermal_conductivity: ConductivityRTA | ConductivityLBTE = self.phonon.thermal_conductivity
 
         return {"thermal_conductivity": self.thermal_conductivity}
 
@@ -185,9 +181,7 @@ class Phono3pyAnalyzer:
         generates the second- and third-order force constants required for phonon calculations.
         """
         if self.phonon is None:
-            raise RuntimeError(
-                "phono3py_transformation has to be called before trying to produce force constants."
-            )
+            raise RuntimeError("phono3py_transformation has to be called before trying to produce force constants.")
 
         forces = [
             self.calculator.calculate(displaced_structure)["forces"]

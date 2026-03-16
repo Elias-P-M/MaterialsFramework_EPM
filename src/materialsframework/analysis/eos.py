@@ -62,9 +62,7 @@ class EOSAnalyzer:
         self._calculator = calculator
         self._eos_transformation = eos_transformation
 
-    def calculate(
-        self, structure: Structure | Atoms, is_relaxed: bool = False
-    ) -> dict[str, list | float]:
+    def calculate(self, structure: Structure | Atoms, is_relaxed: bool = False) -> dict[str, list | float]:
         """Calculates the potential energies and volumes to construct the EOS for the given undeformed structure.
 
         This method applies a series of volume deformations to the input structure, generating a set of strained
@@ -76,23 +74,20 @@ class EOSAnalyzer:
             is_relaxed (bool, optional): Whether the structure is already relaxed. Defaults to False.
 
         Returns:
-            dict[str, list | float]: A dictionary with the following keys:
-                - "strains": A list of strain values corresponding to the deformed structures.
-                - "volumes": A list of volumes for each deformed structure.
-                - "energies": A list of potential energies for each deformed structure.
-                - "e0": The minimum energy of the system.
-                - "b0": The bulk modulus in units of energy/unit of volume^3.
-                - "b0_GPa": The bulk modulus in GPa.
-                - "b1": The derivative of bulk modulus with respect to pressure.
-                - "v0": The minimum volume of the system in Ang^3.
+            dict[str, list | float]: Dictionary with keys:
+                - ``volumes``: Volume for each deformed structure.
+                - ``energies``: Potential energy for each deformed structure.
+                - ``e0``: Minimum energy from EOS fit.
+                - ``b0``: Bulk modulus in eV/Å³.
+                - ``b0_GPa``: Bulk modulus in GPa.
+                - ``b1``: Pressure derivative of bulk modulus.
+                - ``v0``: Equilibrium volume in Å³.
 
         Raises:
             ValueError: If the calculator object does not have the 'energy' property implemented.
         """
         if "energy" not in self.calculator.AVAILABLE_PROPERTIES:
-            raise ValueError(
-                "The calculator object must have the 'energy' property implemented."
-            )
+            raise ValueError("The calculator object must have the 'energy' property implemented.")
 
         if isinstance(structure, Atoms):
             structure = self.ase_adaptor.get_structure(structure)
@@ -102,19 +97,25 @@ class EOSAnalyzer:
 
         self.eos_transformation.apply_transformation(structure)
 
-        volume_list, energy_list = map(
-            list,
-            zip(
-                *[
-                    (
-                        deformed_structure.volume,
-                        self.calculator.relax(structure=deformed_structure)["energy"],
-                    )
-                    for deformed_structure in self.eos_transformation.structures
-                ],
-                strict=False,
-            ),
-        )
+        prev_relax_cell = self.calculator.relax_cell
+        self.calculator.relax_cell = False
+        try:
+            volume_list, energy_list = map(
+                list,
+                zip(
+                    *[
+                        (
+                            result["final_structure"].volume,
+                            result["energy"],
+                        )
+                        for deformed_structure in self.eos_transformation.structures
+                        for result in [self.calculator.relax(structure=deformed_structure)]
+                    ],
+                    strict=False,
+                ),
+            )
+        finally:
+            self.calculator.relax_cell = prev_relax_cell
 
         eos = EOS(eos_name=self.eos_name)
         eos_fit = eos.fit(volumes=volume_list, energies=energy_list)
@@ -154,7 +155,5 @@ class EOSAnalyzer:
             EOSTransformation: The transformation object used for EOS analysis.
         """
         if self._eos_transformation is None:
-            self._eos_transformation = EOSTransformation(
-                start=self.start, stop=self.stop, num=self.num
-            )
+            self._eos_transformation = EOSTransformation(start=self.start, stop=self.stop, num=self.num)
         return self._eos_transformation

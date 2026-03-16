@@ -10,7 +10,6 @@ import subprocess
 from pathlib import Path
 
 import numpy as np
-from pycalphad import Database
 from pymatgen.core import Structure
 
 from materialsframework.tools.calculator import BaseCalculator
@@ -120,18 +119,11 @@ DOSTATIC
             ValueError: If the calculator object does not implement the required properties.
             ValueError: If the lattice type is not valid.
         """
-        if not all(
-            prop in self.calculator.AVAILABLE_PROPERTIES
-            for prop in ["energy", "forces", "stress"]
-        ):
-            raise ValueError(
-                "The calculator object must have the 'energy', 'forces', and 'stress' properties implemented."
-            )
+        if not all(prop in self.calculator.AVAILABLE_PROPERTIES for prop in ["energy", "forces", "stress"]):
+            raise ValueError("The calculator object must have the 'energy', 'forces', and 'stress' properties implemented.")
 
         if not all(lattice in self.available_lattices for lattice in lattices):
-            raise ValueError(
-                f"Invalid lattice type. Available lattices: {self.available_lattices}"
-            )
+            raise ValueError(f"Invalid lattice type. Available lattices: {self.available_lattices}")
 
         self.species = species
         self.lattices = lattices
@@ -149,6 +141,11 @@ DOSTATIC
 
         args = ["-tdb"] + (["-oc"] if open_calphad else [])
         self._run_command("sqs2tdb", args)
+
+        try:
+            from pycalphad import Database
+        except ImportError as e:
+            raise ImportError("pycalphad is required. Install it with: pip install materialsframework[calphad]") from e
 
         tdb_filename = "_".join(sorted([s.upper() for s in self.species])) + ".tdb"
         self.dbf = Database(tdb_filename)
@@ -205,14 +202,10 @@ DOSTATIC
             structure.make_supercell(2)
 
             self.calculator.ensemble = "npt_nose_hoover"
-            res = self.calculator.run(
-                structure=structure, steps=int(3000 / self.md_timestep)
-            )  # NPT for 3 ps
+            res = self.calculator.run(structure=structure, steps=int(3000 / self.md_timestep))  # NPT for 3 ps
 
             self.calculator.ensemble = "nvt_nose_hoover"
-            res = self.calculator.run(
-                structure=res["final_structure"], steps=int(10000 / self.md_timestep)
-            )  # NVT for 10 ps
+            res = self.calculator.run(structure=res["final_structure"], steps=int(10000 / self.md_timestep))  # NVT for 10 ps
 
             n_last = max(1, int(0.2 * 13000))
             energy = np.mean(res["total_energy"][-n_last:])
@@ -221,11 +214,7 @@ DOSTATIC
             final_structure = res["final_structure"]
 
         else:
-            res = (
-                self.calculator.relax(structure=structure)
-                if relax
-                else self.calculator.calculate(structure=structure)
-            )
+            res = self.calculator.relax(structure=structure) if relax else self.calculator.calculate(structure=structure)
             energy, forces, stresses, final_structure = (
                 res["energy"],
                 res["forces"],
@@ -241,18 +230,9 @@ DOSTATIC
 
         # Write str_relax.out
         with (subdir / "str_relax.out").open("w") as f:
-            f.write(
-                "\n".join(
-                    " ".join(map(str, row)) for row in final_structure.lattice.matrix
-                )
-            )
+            f.write("\n".join(" ".join(map(str, row)) for row in final_structure.lattice.matrix))
             f.write("\n1 0 0\n0 1 0\n0 0 1\n")
-            f.write(
-                "\n".join(
-                    " ".join(map(str, site.frac_coords)) + " " + site.species_string
-                    for site in final_structure
-                )
-            )
+            f.write("\n".join(" ".join(map(str, site.frac_coords)) + " " + site.species_string for site in final_structure))
 
         # Write forces.out
         np.savetxt(str(subdir / "force.out"), forces, fmt="%.7e")
@@ -264,9 +244,7 @@ DOSTATIC
             stresses = voigt_6_to_full_3x3_stress(stresses)
         np.savetxt(subdir / "stress.out", stresses, fmt="%.7e")
 
-    def _run_command(
-        self, command: str, args: list[str], cwd: Path | None = None
-    ) -> None:
+    def _run_command(self, command: str, args: list[str], cwd: Path | None = None) -> None:
         """Run a shell command with arguments and print stdout and stderr if verbose turned on.
 
         Args:
@@ -329,9 +307,7 @@ DOSTATIC
 
                 for endmember in lattice_path.glob("*/endmem"):
                     subdir = endmember.parent
-                    self._run_command(
-                        "fitfc", ["-si=str_relax.out", "-f", "-frnn=1.5"], cwd=subdir
-                    )
+                    self._run_command("fitfc", ["-si=str_relax.out", "-f", "-frnn=1.5"], cwd=subdir)
                     self._run_command("robustrelax_vasp", ["-vib"], cwd=subdir)
 
     def _fit_model(self) -> None:
@@ -353,11 +329,7 @@ DOSTATIC
             self._run_command("sqs2tdb", args, cwd=lattice_path)
 
             terms_content = (
-                (
-                    "1,0\n2,1"
-                    if lattice in ["BCC_A2", "FCC_A1", "HCP_A3"]
-                    else "1,0:1,0\n2,0:1,0\n"
-                )
+                ("1,0\n2,1" if lattice in ["BCC_A2", "FCC_A1", "HCP_A3"] else "1,0:1,0\n2,0:1,0\n")
                 if not self.terms
                 else self.terms
             )

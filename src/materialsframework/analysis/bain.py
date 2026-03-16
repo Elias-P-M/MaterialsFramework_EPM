@@ -34,7 +34,7 @@ class BainPathAnalyzer:
     def __init__(
         self,
         start: float = 0.89,
-        stop: float = 1.4,
+        stop: float = 1.5,
         step: float = 0.01,
         calculator: BaseCalculator | None = None,
         bain_transformation: BainDisplacementTransformation | None = None,
@@ -43,7 +43,7 @@ class BainPathAnalyzer:
 
         Args:
             start (float, optional): The starting displacement value for the c/a ratio. Defaults to 0.89.
-            stop (float, optional): The stopping displacement value for the c/a ratio. Defaults to 1.4.
+            stop (float, optional): The stopping displacement value for the c/a ratio. Defaults to 1.5.
             step (float, optional): The step size for incrementing the c/a ratio. Defaults to 0.01.
             calculator (BaseCalculator | None, optional): The calculator object used to compute potential energies.
                                                             Defaults to `M3GNetCalculator`.
@@ -59,9 +59,7 @@ class BainPathAnalyzer:
         self._calculator = calculator
         self._bain_transformation = bain_transformation
 
-    def calculate(
-        self, structure: Structure | Atoms, is_relaxed: bool = False
-    ) -> dict[str, list]:
+    def calculate(self, structure: Structure | Atoms, is_relaxed: bool = False) -> dict[str, list]:
         """Calculates the potential energies along the Bain Path for the given undeformed structure.
 
         This method applies the Bain transformation to the input structure, generating a series of deformed
@@ -73,17 +71,15 @@ class BainPathAnalyzer:
             is_relaxed (bool, optional): Whether the input structure is already relaxed. Defaults to False.
 
         Returns:
-            dict[str, list]: A dictionary with the following keys:
-                - "c_a_list": A list of c/a ratios corresponding to the deformed structures.
-                - "energy_list": A list of potential energies for each deformed structure.
+            dict[str, list]: Dictionary with keys:
+                - ``c_a_list``: c/a ratios for each deformed structure.
+                - ``energy_list``: Potential energy for each deformed structure.
 
         Raises:
             ValueError: If the calculator object does not have the 'energy' property implemented.
         """
         if "energy" not in self.calculator.AVAILABLE_PROPERTIES:
-            raise ValueError(
-                "The calculator object must have the 'energy' property implemented."
-            )
+            raise ValueError("The calculator object must have the 'energy' property implemented.")
 
         if isinstance(structure, Atoms):
             structure = self.ase_adaptor.get_structure(structure)
@@ -128,7 +124,5 @@ class BainPathAnalyzer:
             BainDisplacementTransformation: The transformation object used for Bain displacements.
         """
         if self._bain_transformation is None:
-            self._bain_transformation = BainDisplacementTransformation(
-                start=self.start, stop=self.stop, step=self.step
-            )
+            self._bain_transformation = BainDisplacementTransformation(start=self.start, stop=self.stop, step=self.step)
         return self._bain_transformation
