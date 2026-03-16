@@ -2,6 +2,23 @@
 Changelog
 =========
 
+Version 0.13.0
+==============
+- Added ``CTEAnalyzer`` and ``CTETransformation`` — coefficient of thermal expansion from NPT-MD volume trends
+- Added ``HSolubilityAnalyzer`` and ``HSolubilityTransformation`` — hydrogen insertion and solution energies
+- Added ``USFEAnalyzer`` and ``USFETransformation`` — generalized stacking fault energy curves and unstable SFE
+- Added ``RandomCalculator`` — dependency-free testing stub returning random energies and forces
+- Added ``BondLatticeParameter`` tool — bond-length-based lattice parameter prediction for FCC, BCC, and HCP alloys
+- Added ``SqsGenerator`` tool (moved from transformations, renamed from ``SpecialQuasirandomStructures``)
+- Added entry-point-backed registries for all four domains (``get_calculator``, ``get_analyzer``, ``get_transformation``, ``get_tool``)
+- Added comprehensive test suite covering all calculators, analyzers, transformations, and tools
+- Added MkDocs documentation site with API reference, user guide, and getting-started pages
+- Added GitHub Actions CI/CD workflows for testing, linting, documentation, and PyPI release
+- Migrated ``PetMadCalculator`` backend from deprecated ``pet-mad`` to ``upet`` while preserving the public API
+- Migrated from ``setup.py`` / conda environments to ``pyproject.toml`` with ``uv`` and ``hatchling``
+- Replaced eager imports with lazy ``__getattr__``-based loading across all subpackages
+- ``calculator`` property on ``BaseCalculator`` and ``BaseMDCalculator`` is now formally abstract (``@abstractmethod``)
+
 Version 0.12.0
 ==============
 - Added NPT Berendsen ensemble to MD
