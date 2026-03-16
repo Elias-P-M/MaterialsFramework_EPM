@@ -54,6 +54,7 @@ MaterialsFramework provides a single, uniform API for 20+ ML interatomic potenti
 
 Non-MLIP calculators: `RandomCalculator` (dependency-free testing stub) and `VASPCalculator` (external licensed VASP backend).
 
+> [!WARNING]
 > **PosEGNN** has no installable package on any public index. To use it, clone the repository and add the module directory to your `PYTHONPATH` manually:
 > ```bash
 > git clone --depth 1 https://github.com/IBM/materials.git
