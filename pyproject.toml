@@ -170,14 +170,15 @@ select = [
     "W",   # pycodestyle Warnings
 ]
 ignore = [
-    "PLR0913", # Too many arguments in function definition
+    "E402",    # module level import not at top of file
     "E501",    # line too long
     "ERA001",  # Eradicate: Commented-out code
-    "PLC0415", # `import` should be at the top-level of a file
-    "PLR2004", # Magic value used in comparison
-    "PLR0911", # Too many return statements in function
     "N801",    # class names should be in CamelCase
     "N802",    # function names should be in snake_case
+    "PLC0415", # `import` should be at the top-level of a file
+    "PLR0911", # Too many return statements in function
+    "PLR0913", # Too many arguments in function definition
+    "PLR2004", # Magic value used in comparison
 ]
 pydocstyle.convention = "google"
 
