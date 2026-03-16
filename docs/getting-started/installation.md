@@ -92,7 +92,7 @@ export PYTHONPATH="$PWD/materials/models/pos_egnn:$PYTHONPATH"
 ## Development Setup
 
 ```bash
-# Core + dev tools (ruff, ty, nox, pytest, pre-commit)
+# Core + dev tools (ruff, ty, pytest, pre-commit)
 uv sync --group dev
 
 # Core + dev tools + selected MLIP extras
