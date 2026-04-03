@@ -175,6 +175,7 @@ class BondLatticeParameter:
             "Ni": 2.81,
             "Rb": 5.59,
             "Re": 3.19,
+            "Ru": 3.15,
             "Sc": 3.63,
             "Ta": 3.30,
             "Ti": 3.31,
@@ -279,12 +280,11 @@ class BondLatticeParameter:
         if self._calculator is None:
             from materialsframework.calculators.m3gnet import M3GNetCalculator
 
-            self._calculator = M3GNetCalculator(
-                fmax=0.01,
-                optimizer="FIRE",
-                fix_symmetry=True,
-                relax_cell=True,
-            )
+            self._calculator = M3GNetCalculator(fmax=0.01, optimizer="FIRE")
+
+        self._calculator.fix_symmetry = True
+        self._calculator.relax_cell = True
+
         return self._calculator
 
     @classmethod
