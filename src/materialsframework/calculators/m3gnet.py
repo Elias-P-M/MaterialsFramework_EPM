@@ -43,6 +43,7 @@ class M3GNetCalculator(BaseCalculator, BaseMDCalculator):
         stress_weight: float = 1.0,
         use_voigt: bool = False,
         use_warp: bool = False,
+        cache_location: str | None = None,
         **kwargs,
     ) -> None:
         """Initializes the M3GNetCalculator with the specified model and calculation settings.
@@ -60,6 +61,8 @@ class M3GNetCalculator(BaseCalculator, BaseMDCalculator):
                                              Defaults to 1.0.
             use_voigt (bool, optional): Whether to use Voigt notation for stress. Defaults to False.
             use_warp (bool, optional): Whether to use WARP for neighbor list construction. Defaults to False.
+            cache_location (str, optional): The directory where the downloaded model will be cached after downloading.
+                                            If None, the default cache location of $HOME/.matgl will be used.
             **kwargs: Additional keyword arguments passed to the `BaseCalculator` and `BaseMDCalculator` constructors.
 
         Examples:
@@ -82,6 +85,7 @@ class M3GNetCalculator(BaseCalculator, BaseMDCalculator):
         self.stress_weight = stress_weight
         self.use_voigt = use_voigt
         self.use_warp = use_warp
+        self.cache_location = cache_location
 
         self._calculator = None
         self._potential = None
