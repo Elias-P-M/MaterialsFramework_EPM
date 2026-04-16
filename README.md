@@ -123,7 +123,7 @@ uv sync --extra chgnet
 uv sync --extra chgnet --extra matgl --extra sevennet
 ```
 
-See the [installation guide](docs/getting-started/installation.md) for full setup instructions and the [MLIP compatibility matrix](docs/getting-started/mlip-conflicts.md) for conflict details.
+See the [installation guide](https://github.com/dogusariturk/MaterialsFramework/blob/refactor/docs/getting-started/installation.md) for full setup instructions and the [MLIP compatibility matrix](https://github.com/dogusariturk/MaterialsFramework/blob/refactor/docs/getting-started/mlip-conflicts.md) for conflict details.
 
 ### Quick Example
 
@@ -163,7 +163,7 @@ If you use MaterialsFramework in your research, please cite:
 
 ## License
 
-Distributed under the GPL-3.0-or-later License. See [GPL-3.0](https://opensource.org/license/gpl-3-0) for details.
+Distributed under the GPL-3.0-or-later License. See [GPL-3.0](https://github.com/dogusariturk/MaterialsFramework/blob/refactor/LICENSE) for details.
 
 ## Contact
 
