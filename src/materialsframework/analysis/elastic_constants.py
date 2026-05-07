@@ -137,7 +137,8 @@ class ElasticConstantsAnalyzer:
 
         return {
             **dict(zip(cij_order, cij, strict=False)),
-            "youngs_modulus": elastic_tensor.y_mod / 1e9,
+            "youngs_modulus": elastic_tensor.y_mod / 1e9 / units.GPa, #TODO: pymatgen reports Young's modulus in Pa in its comments, but acutally returns 1e9*y_mod in eV/Å³,
+                                                                      # change when fixed https://github.com/materialsproject/pymatgen/issues/4435
             "voigt_bulk_modulus": elastic_tensor.k_voigt / units.GPa,
             "voigt_shear_modulus": elastic_tensor.g_voigt / units.GPa,
             "reuss_bulk_modulus": elastic_tensor.k_reuss / units.GPa,
@@ -198,7 +199,7 @@ class ElasticConstantsAnalyzer:
             elastic_tensor[i, j] = elastic_tensor[j, i] = val
 
         for block in self.EQUIV.get(sys := elastic.get_lattice_type(structure)[1].lower(), []):
-            mean_val = np.mean([elastic_tensor[p, q] for p, q in block])
+            mean_val = np.max([elastic_tensor[p, q] for p, q in block])
             for p, q in block:
                 elastic_tensor[p, q] = elastic_tensor[q, p] = mean_val
 
