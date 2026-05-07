@@ -199,9 +199,9 @@ class ElasticConstantsAnalyzer:
             elastic_tensor[i, j] = elastic_tensor[j, i] = val
 
         for block in self.EQUIV.get(sys := elastic.get_lattice_type(structure)[1].lower(), []):
-            mean_val = np.max([elastic_tensor[p, q] for p, q in block])
+            non_zero_val = np.max([elastic_tensor[p, q] for p, q in block])
             for p, q in block:
-                elastic_tensor[p, q] = elastic_tensor[q, p] = mean_val
+                elastic_tensor[p, q] = elastic_tensor[q, p] = non_zero_val
 
         # add the derived C66 if required
         if sys in self.SPECIAL and elastic_tensor[5, 5] == 0:
