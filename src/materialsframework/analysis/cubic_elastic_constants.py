@@ -15,6 +15,7 @@ from ase import Atoms
 from pymatgen.analysis.elasticity import ElasticTensor
 from pymatgen.analysis.eos import EOS
 from pymatgen.io.ase import AseAtomsAdaptor
+from ase import units
 
 from materialsframework.transformations.cubic_elastic_constants import (
     CubicElasticConstantsDeformationTransformation,
@@ -126,12 +127,12 @@ class CubicElasticConstantsAnalyzer:
             "C12": c12,
             "C44": c44,
             "youngs_modulus": elastic_tensor.y_mod / 1e9,
-            "voigt_bulk_modulus": elastic_tensor.k_voigt,
-            "voigt_shear_modulus": elastic_tensor.g_voigt,
-            "reuss_bulk_modulus": elastic_tensor.k_reuss,
-            "reuss_shear_modulus": elastic_tensor.g_reuss,
-            "voigt_reuss_hill_bulk_modulus": elastic_tensor.k_vrh,
-            "voigt_reuss_hill_shear_modulus": elastic_tensor.g_vrh,
+            "voigt_bulk_modulus": elastic_tensor.k_voigt / units.GPa,
+            "voigt_shear_modulus": elastic_tensor.g_voigt / units.GPa,
+            "reuss_bulk_modulus": elastic_tensor.k_reuss / units.GPa,
+            "reuss_shear_modulus": elastic_tensor.g_reuss / units.GPa,
+            "voigt_reuss_hill_bulk_modulus": elastic_tensor.k_vrh / units.GPa,
+            "voigt_reuss_hill_shear_modulus": elastic_tensor.g_vrh / units.GPa,
             "poisson_ratio": elastic_tensor.homogeneous_poisson,
             "pugh_ratio": elastic_tensor.g_vrh / elastic_tensor.k_vrh,
         }
