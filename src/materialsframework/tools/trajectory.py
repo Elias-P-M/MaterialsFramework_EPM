@@ -49,6 +49,7 @@ class TrajectoryObserver(collections.abc.Sequence):
         include_magmoms: bool = False,
         include_dipoles: bool = False,
         include_velocities: bool = False,
+        include_atomic_potentials: bool = False,
     ) -> None:
         """Initializes the TrajectoryObserver with the ASE Atoms object and optional flags.
 
@@ -64,12 +65,15 @@ class TrajectoryObserver(collections.abc.Sequence):
                 at each step. Defaults to False.
             include_velocities (bool, optional): If True, the observer will record the velocities
                 at each step. Defaults to False.
+            include_atomic_potentials (bool, optional): If True, the observer will record per-atom potential energies
+                at each step. Note, the calculator used must exposes such property. Defaults to False.
         """
         self.atoms = atoms
         self.include_temperature = include_temperature
         self.include_magmoms = include_magmoms
         self.include_dipoles = include_dipoles
         self.include_velocities = include_velocities
+        self.include_atomic_potentials = include_atomic_potentials
 
         self.total_energies: list[float] = []
         self.potential_energies: list[float] = []
@@ -85,6 +89,8 @@ class TrajectoryObserver(collections.abc.Sequence):
             self.dipoles: list[ArrayLike] = []
         if self.include_velocities:
             self.velocities: list[ArrayLike] = []
+        if self.include_atomic_potentials:
+            self.atomic_potentials: list[ArrayLike] = []
         self.atom_positions: list[ArrayLike] = []
         self.atomic_numbers: list[int] = []
         self.chemical_symbols: list[str] = []
@@ -110,6 +116,8 @@ class TrajectoryObserver(collections.abc.Sequence):
             self.dipoles.append(self.atoms.get_array("dipole"))
         if self.include_velocities:
             self.velocities.append(self.atoms.get_velocities())
+        if self.include_atomic_potentials:
+            self.atomic_potentials.append(self.atoms.get_potential_energies())
         self.atom_positions.append(self.atoms.get_positions())
         self.atomic_numbers.append(self.atoms.get_atomic_numbers())
         self.chemical_symbols.append(self.atoms.get_chemical_symbols())
@@ -144,6 +152,9 @@ class TrajectoryObserver(collections.abc.Sequence):
             item_properties += (self.dipoles[item],)
         if self.include_velocities:
             item_properties += (self.velocities[item],)
+        if self.include_atomic_potentials:
+            item_properties += (self.atomic_potentials[item],)
+
         return item_properties
 
     def __len__(self):
@@ -192,6 +203,8 @@ class TrajectoryObserver(collections.abc.Sequence):
             out_dict["dipoles"] = self.dipoles
         if self.include_velocities:
             out_dict["velocities"] = self.velocities
+        if self.include_atomic_potentials:
+            out_dict["atomic_potentials"] = self.atomic_potentials
         return out_dict
 
     def as_pandas(self) -> pd.DataFrame:

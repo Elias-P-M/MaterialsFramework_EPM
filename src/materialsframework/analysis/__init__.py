@@ -21,6 +21,7 @@ _ANALYZER_MAP: dict[str, tuple[str, str]] = {
     "ElasticConstantsAnalyzer": ("materialsframework.analysis.elastic_constants", "ElasticConstantsAnalyzer"),
     "EOSAnalyzer": ("materialsframework.analysis.eos", "EOSAnalyzer"),
     "FormationEnergyAnalyzer": ("materialsframework.analysis.formation_energy", "FormationEnergyAnalyzer"),
+    "GreenKuboAnalyzer": ("materialsframework.analysis.green_kubo", "GreenKuboAnalyzer"),
     "HSolubilityAnalyzer": ("materialsframework.analysis.h_solubility", "HSolubilityAnalyzer"),
     "Phono3pyAnalyzer": ("materialsframework.analysis.phono3py", "Phono3pyAnalyzer"),
     "PhonopyAnalyzer": ("materialsframework.analysis.phonopy", "PhonopyAnalyzer"),

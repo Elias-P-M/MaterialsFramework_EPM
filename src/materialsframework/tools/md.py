@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 
     from ase import Atoms
     from ase.calculators.calculator import Calculator
+    from ase.md.md import MolecularDynamics
 
 __author__ = "Doguhan Sariturk"
 __email__ = "dogu.sariturk@gmail.com"
@@ -123,10 +124,10 @@ class BaseMDCalculator(ABC):
         self.interval: int = interval
         self.ase_adaptor = AseAtomsAdaptor()
 
-        self.dyn = None
-        self.atoms = None
-        self.trajectory = None
-        self.results = None
+        self.dyn: MolecularDynamics | None = None
+        self.atoms: Atoms | None = None
+        self.trajectory: TrajectoryObserver | None = None
+        self.results: dict[str, Any] | None = None
 
     @property
     @abstractmethod
@@ -199,11 +200,11 @@ class BaseMDCalculator(ABC):
         self.dyn = NPTBerendsen(
             atoms=ase_atoms,
             timestep=self.timestep * units.fs,
-            temperature=self.temperature,
+            temperature_K=self.temperature,
             pressure_au=self.pressure * 1.01325 * units.bar,
             taut=self.taut * units.fs,
             taup=self.taup * units.fs,
-            compressibility=self.compressibility / units.bar,
+            compressibility_au=self.compressibility / units.bar,
         )
 
     def _initialize_inhomogeneous_npt_berendsen(self, ase_atoms: Atoms) -> None:
@@ -215,15 +216,85 @@ class BaseMDCalculator(ABC):
         self.dyn = Inhomogeneous_NPTBerendsen(
             atoms=ase_atoms,
             timestep=self.timestep * units.fs,
-            temperature=self.temperature,
+            temperature_K=self.temperature,
             pressure_au=self.pressure * 1.01325 * units.bar,
             taut=self.taut * units.fs,
             taup=self.taup * units.fs,
-            compressibility=self.compressibility / units.bar,
+            compressibility_au=self.compressibility / units.bar,
             mask=self.mask,
         )
 
-    def run(self, structure: Atoms | Structure | Molecule, steps: int) -> dict[str, Any]:
+    _ENSEMBLE_INITIALIZERS: dict[str, str] = {
+        "npt_nose_hoover": "_initialize_npt_nose_hoover",
+        "nvt_nose_hoover": "_initialize_nvt_nose_hoover",
+        "nve": "_initialize_nve",
+        "npt_berendsen": "_initialize_npt_berendsen",
+        "inhomogeneous_npt_berendsen": "_initialize_inhomogeneous_npt_berendsen",
+    }
+
+    def build_dyn(self, ase_atoms: Atoms, ensemble: str | None = None) -> MolecularDynamics:
+        """Builds and returns an ASE dynamics object for the given atoms.
+
+        Uses the MD parameters set on this calculator (``timestep``, ``temperature``,
+        ``pressure``, ``ttime``, ``taut``, ``taup``, ``compressibility``, ...).
+        The ``ensemble`` argument overrides ``self.ensemble`` for this single build,
+        which is useful when an analyzer chains multiple MD phases (e.g. NPT
+        equilibration followed by NVE production in the Green-Kubo workflow).
+
+        Note:
+            Also assigns the constructed integrator to ``self.dyn`` to preserve
+            compatibility with :meth:`run`.
+
+        Args:
+            ase_atoms (Atoms): The ASE atoms object the dyn will integrate.
+            ensemble (str | None, optional): Ensemble name override. If ``None``,
+                ``self.ensemble`` is used. Defaults to ``None``.
+
+        Returns:
+            ase.md.md.MolecularDynamics: The ASE dynamics object ready to run.
+
+        Raises:
+            ValueError: If ``ensemble`` (or ``self.ensemble``) is not one of the
+                supported names.
+        """
+        name = (ensemble if ensemble is not None else self.ensemble).lower()
+        method_name = self._ENSEMBLE_INITIALIZERS.get(name)
+        if method_name is None:
+            raise ValueError(
+                f"Unknown ensemble {name!r}. Must be one of {list(self._ENSEMBLE_INITIALIZERS)}."
+            )
+        getattr(self, method_name)(ase_atoms)
+        assert self.dyn is not None  # set by the initializer above
+        return self.dyn
+
+    def prepare_atoms(self, ase_atoms: Atoms) -> None:
+        """Attaches the calculator, initializes velocities, and applies constraints.
+
+        Performs the per-run setup used by :meth:`run` in a reusable form so
+        external callers (e.g. :class:`materialsframework.analysis.green_kubo.GreenKuboAnalyzer`)
+        can drive multi-phase MD while still relying on this calculator's
+        parameters. The operations are:
+
+        1. Assign ``self.calculator`` to ``ase_atoms.calc``.
+        2. Seed velocities with ``MaxwellBoltzmannDistribution`` at
+           ``self.temperature``.
+        3. Remove center-of-mass translation if ``self.stationary``.
+        4. Remove angular momentum if ``self.zero_rotation``.
+        5. Attach ``FixSymmetry`` if ``self.fix_symmetry``.
+
+        Args:
+            ase_atoms (Atoms): The ASE atoms object to prepare in place.
+        """
+        ase_atoms.calc = self.calculator
+        MaxwellBoltzmannDistribution(ase_atoms, temperature_K=self.temperature)
+        if self.stationary:
+            Stationary(ase_atoms)
+        if self.zero_rotation:
+            ZeroRotation(ase_atoms)
+        if self.fix_symmetry:
+            ase_atoms.set_constraint(FixSymmetry(ase_atoms))
+
+    def run(self, structure: Atoms | Structure | Molecule, steps: int, **kwargs) -> dict[str, Any]:
         """Executes the Molecular Dynamics (MD) simulation using the specified calculator.
 
         This method performs the simulation based on the provided structure and
@@ -232,6 +303,7 @@ class BaseMDCalculator(ABC):
         Args:
             structure (Atoms | Structure | Molecule): The input atomic structure for the MD simulation.
             steps (int): The number of MD steps to perform.
+                **kwargs: Keyword arguments to pass to the TrajectoryObserver.
 
         Returns:
             dict[str, Any]: Dictionary with keys:
@@ -246,33 +318,13 @@ class BaseMDCalculator(ABC):
         """
         ase_atoms = self.ase_adaptor.get_atoms(structure) if isinstance(structure, (Structure, Molecule)) else structure.copy()
 
-        MaxwellBoltzmannDistribution(ase_atoms, temperature_K=self.temperature)
-
-        if self.stationary:
-            Stationary(ase_atoms)
-        if self.zero_rotation:
-            ZeroRotation(ase_atoms)
-
-        ase_atoms.calc = self.calculator
-
-        if self.fix_symmetry:
-            ase_atoms.set_constraint(FixSymmetry(ase_atoms))
-
-        if self.ensemble.lower() == "npt_nose_hoover":
-            self._initialize_npt_nose_hoover(ase_atoms)
-        elif self.ensemble.lower() == "nvt_nose_hoover":
-            self._initialize_nvt_nose_hoover(ase_atoms)
-        elif self.ensemble.lower() == "nve":
-            self._initialize_nve(ase_atoms)
-        elif self.ensemble.lower() == "npt_berendsen":
-            self._initialize_npt_berendsen(ase_atoms)
-        elif self.ensemble.lower() == "inhomogeneous_npt_berendsen":
-            self._initialize_inhomogeneous_npt_berendsen(ase_atoms)
+        self.prepare_atoms(ase_atoms)
+        self.build_dyn(ase_atoms)
 
         if self.logfile:
             self._initialize_logger(ase_atoms)
 
-        self.trajectory = TrajectoryObserver(ase_atoms, include_temperature=True, include_velocities=True)
+        self.trajectory = TrajectoryObserver(ase_atoms, include_temperature=True, include_velocities=True, **kwargs)
         self.dyn.attach(self.trajectory, interval=self.interval)
 
         self.dyn.run(steps)
